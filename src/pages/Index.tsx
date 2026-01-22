@@ -1,148 +1,249 @@
-import { Plane, TrendingUp, Shield, Clock } from "lucide-react";
-import { Layout } from "@/components/layout/Layout";
-import { FlightSearchForm } from "@/components/flight/FlightSearchForm";
-import { DestinationCard } from "@/components/flight/DestinationCard";
-import { AirlineCard } from "@/components/flight/AirlineCard";
-import { useDestinations, useAirlines } from "@/hooks/useFlights";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
+import { Plane, Loader2, ArrowLeftRight, ExternalLink, Clock, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useDestinations, useDamascusFlights } from "@/hooks/useFlights";
+import type { Flight, Destination } from "@/types/flight";
+
+// Map countries to their likely airport codes
+const countryToAirport: Record<string, string> = {
+  'AE': 'DXB', // UAE -> Dubai
+  'QA': 'DOH', // Qatar -> Doha
+  'SA': 'JED', // Saudi -> Jeddah
+  'KW': 'KWI', // Kuwait
+  'BH': 'BAH', // Bahrain
+  'OM': 'MCT', // Oman
+  'JO': 'AMM', // Jordan
+  'LB': 'BEY', // Lebanon
+  'EG': 'CAI', // Egypt
+  'TR': 'IST', // Turkey
+  'IQ': 'BGW', // Iraq
+  'RU': 'SVO', // Russia
+};
 
 const Index = () => {
-  const { data: destinations, isLoading: destinationsLoading } = useDestinations();
-  const { data: airlines, isLoading: airlinesLoading } = useAirlines();
+  const [userLocation, setUserLocation] = useState<string | null>(null);
+  const [detectedCity, setDetectedCity] = useState<string>("");
+  const [isDetecting, setIsDetecting] = useState(true);
+  const [tripDirection, setTripDirection] = useState<'to' | 'from'>('to'); // 'to' = to Damascus
+  
+  const { data: destinations } = useDestinations();
+  const { data: flights, isLoading: flightsLoading } = useDamascusFlights(
+    tripDirection === 'to' ? 'to' : 'from',
+    userLocation || undefined
+  );
 
-  const otherDestinations = destinations?.filter(d => d.airport_code !== 'DAM') || [];
-  const featuredAirlines = airlines?.slice(0, 6) || [];
+  // Detect user location
+  useEffect(() => {
+    const detectLocation = async () => {
+      try {
+        // Try to get location from IP
+        const response = await fetch('https://ipapi.co/json/');
+        const data = await response.json();
+        
+        if (data.country_code && countryToAirport[data.country_code]) {
+          setUserLocation(countryToAirport[data.country_code]);
+          setDetectedCity(data.city || data.country_name);
+        } else if (data.country_code === 'SY') {
+          // User is in Syria, default to Dubai as destination
+          setUserLocation('DXB');
+          setDetectedCity('دمشق');
+          setTripDirection('from');
+        } else {
+          // Default to Dubai if location not detected
+          setUserLocation('DXB');
+          setDetectedCity('دبي');
+        }
+      } catch (error) {
+        // Default to Dubai on error
+        setUserLocation('DXB');
+        setDetectedCity('دبي');
+      } finally {
+        setIsDetecting(false);
+      }
+    };
+
+    detectLocation();
+  }, []);
+
+  // Get destination info
+  const userDestination = useMemo(() => {
+    return destinations?.find(d => d.airport_code === userLocation);
+  }, [destinations, userLocation]);
+
+  const formatTime = (time: string) => time.slice(0, 5);
+  
+  const formatDuration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}س ${mins > 0 ? `${mins}د` : ''}`;
+  };
+
+  const formatPrice = (price: number | null) => {
+    if (!price) return "اتصل للسعر";
+    return `$${price}`;
+  };
+
+  const toggleDirection = () => {
+    setTripDirection(prev => prev === 'to' ? 'from' : 'to');
+  };
 
   return (
-    <Layout>
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-navy-dark via-primary to-primary/80 text-white">
-        {/* Decorative Elements */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-gold rounded-full blur-3xl" />
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-sky-medium rounded-full blur-3xl" />
+    <div className="min-h-screen bg-gradient-to-b from-primary/5 to-background" dir="rtl">
+      {/* Simple Header */}
+      <header className="py-6 text-center">
+        <div className="flex items-center justify-center gap-3 mb-2">
+          <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center">
+            <Plane className="h-6 w-6 text-primary-foreground" />
+          </div>
+          <h1 className="text-2xl font-bold">رحلات دمشق</h1>
         </div>
-        
-        {/* Animated Plane */}
-        <div className="absolute top-1/2 -translate-y-1/2 opacity-20 animate-plane-fly">
-          <Plane className="h-16 w-16" />
-        </div>
+        <p className="text-muted-foreground text-sm">ابحث عن رحلتك بسهولة</p>
+      </header>
 
-        <div className="container relative py-16 md:py-24">
-          <div className="text-center max-w-3xl mx-auto mb-10">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-              ابحث عن رحلتك
-              <span className="block text-gold">من وإلى دمشق</span>
-            </h1>
-            <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto">
-              قارن أسعار الرحلات من جميع شركات الطيران العاملة واحجز رحلتك بأفضل الأسعار
+      {/* Main Content */}
+      <main className="container max-w-2xl px-4 pb-12">
+        {/* Route Display */}
+        <Card className="mb-6 overflow-hidden">
+          <CardContent className="p-0">
+            <div className="flex items-center">
+              {/* From */}
+              <div className="flex-1 p-5 text-center">
+                <p className="text-xs text-muted-foreground mb-1">من</p>
+                <p className="text-xl font-bold">
+                  {tripDirection === 'to' ? (userDestination?.city_ar || detectedCity || 'جاري التحديد...') : 'دمشق'}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {tripDirection === 'to' ? (userLocation || '...') : 'DAM'}
+                </p>
+              </div>
+
+              {/* Swap Button */}
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full h-12 w-12 border-2 flex-shrink-0 hover:bg-primary hover:text-primary-foreground transition-all"
+                onClick={toggleDirection}
+              >
+                <ArrowLeftRight className="h-5 w-5" />
+              </Button>
+
+              {/* To */}
+              <div className="flex-1 p-5 text-center">
+                <p className="text-xs text-muted-foreground mb-1">إلى</p>
+                <p className="text-xl font-bold">
+                  {tripDirection === 'to' ? 'دمشق' : (userDestination?.city_ar || detectedCity || 'جاري التحديد...')}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {tripDirection === 'to' ? 'DAM' : (userLocation || '...')}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Location Detection Message */}
+        {isDetecting && (
+          <div className="flex items-center justify-center gap-2 text-muted-foreground mb-6">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-sm">جاري تحديد موقعك...</span>
+          </div>
+        )}
+
+        {/* Flights List */}
+        <div className="space-y-3">
+          <h2 className="font-bold text-lg mb-4">
+            {flightsLoading ? 'جاري البحث...' : `${flights?.length || 0} رحلة متاحة`}
+          </h2>
+
+          {flightsLoading ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+              <p className="text-muted-foreground">جاري البحث عن أفضل الرحلات...</p>
+            </div>
+          ) : flights && flights.length > 0 ? (
+            flights.map((flight) => (
+              <FlightCard key={flight.id} flight={flight} />
+            ))
+          ) : (
+            <Card className="py-16 text-center">
+              <Plane className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+              <p className="text-muted-foreground">لا توجد رحلات متاحة حالياً</p>
+              <p className="text-sm text-muted-foreground mt-1">سيتم إضافة الرحلات قريباً</p>
+            </Card>
+          )}
+        </div>
+      </main>
+
+      {/* Simple Footer */}
+      <footer className="py-6 text-center border-t bg-muted/30">
+        <p className="text-sm text-muted-foreground">
+          © {new Date().getFullYear()} رحلات دمشق
+        </p>
+      </footer>
+    </div>
+  );
+};
+
+// Simplified Flight Card
+function FlightCard({ flight }: { flight: Flight }) {
+  const formatTime = (time: string) => time.slice(0, 5);
+  
+  const formatDuration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}س ${mins > 0 ? `${mins}د` : ''}`;
+  };
+
+  return (
+    <Card className="hover:shadow-md transition-shadow">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-4">
+          {/* Airline */}
+          <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <span className="font-bold text-primary">{flight.airline?.code}</span>
+          </div>
+
+          {/* Flight Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-bold">{formatTime(flight.departure_time)}</span>
+              <span className="text-muted-foreground">→</span>
+              <span className="font-bold">{formatTime(flight.arrival_time)}</span>
+            </div>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {formatDuration(flight.duration_minutes)}
+              </span>
+              <Badge variant={flight.stops === 0 ? "default" : "secondary"} className="text-xs">
+                {flight.stops === 0 ? "مباشرة" : `${flight.stops} توقف`}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {flight.airline?.name_ar}
             </p>
           </div>
 
-          {/* Search Form */}
-          <div className="max-w-4xl mx-auto">
-            <FlightSearchForm />
+          {/* Price & Book */}
+          <div className="text-left flex-shrink-0">
+            <p className="text-xl font-bold text-primary">
+              {flight.price_usd ? `$${flight.price_usd}` : '-'}
+            </p>
+            {flight.airline?.website_url && (
+              <Button asChild size="sm" variant="outline" className="mt-2 w-full">
+                <a href={flight.airline.website_url} target="_blank" rel="noopener noreferrer">
+                  احجز
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                </a>
+              </Button>
+            )}
           </div>
         </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-12 bg-muted/50">
-        <div className="container">
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="flex items-center gap-4 p-6 bg-card rounded-xl shadow-sm">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-bold">مقارنة الأسعار</h3>
-                <p className="text-sm text-muted-foreground">قارن بين جميع الشركات</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 p-6 bg-card rounded-xl shadow-sm">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Shield className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-bold">معلومات موثوقة</h3>
-                <p className="text-sm text-muted-foreground">بيانات محدثة باستمرار</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 p-6 bg-card rounded-xl shadow-sm">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Clock className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-bold">بحث سريع</h3>
-                <p className="text-sm text-muted-foreground">نتائج فورية</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Popular Destinations */}
-      <section className="py-16">
-        <div className="container">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-2xl md:text-3xl font-bold mb-2">الوجهات المتاحة</h2>
-              <p className="text-muted-foreground">اكتشف جميع الوجهات من وإلى دمشق</p>
-            </div>
-          </div>
-
-          {destinationsLoading ? (
-            <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <Skeleton key={i} className="h-24 rounded-xl" />
-              ))}
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {otherDestinations.slice(0, 8).map((destination) => (
-                <DestinationCard
-                  key={destination.id}
-                  destination={destination}
-                  type="to"
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Airlines Section */}
-      <section className="py-16 bg-muted/30">
-        <div className="container">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-2xl md:text-3xl font-bold mb-2">شركات الطيران</h2>
-              <p className="text-muted-foreground">الشركات العاملة من وإلى دمشق</p>
-            </div>
-            <Button asChild variant="outline">
-              <Link to="/airlines">عرض الكل</Link>
-            </Button>
-          </div>
-
-          {airlinesLoading ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-40 rounded-xl" />
-              ))}
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredAirlines.map((airline) => (
-                <AirlineCard key={airline.id} airline={airline} />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-    </Layout>
+      </CardContent>
+    </Card>
   );
-};
+}
 
 export default Index;
