@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
-import { Plane, Loader2, ArrowLeftRight, ExternalLink, Clock, ChevronDown, Check, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plane, Loader2, ArrowLeftRight, ExternalLink, ChevronDown, Check, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Users, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Command,
   CommandEmpty,
@@ -19,6 +20,8 @@ import {
 import { useDestinations, useDamascusFlights } from "@/hooks/useFlights";
 import type { Flight, Destination } from "@/types/flight";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { ar } from "date-fns/locale";
 
 // Map countries to their likely airport codes
 const countryToAirport: Record<string, string> = {
@@ -38,6 +41,10 @@ const Index = () => {
   const [tripDirection, setTripDirection] = useState<'to' | 'from'>('to');
   const [cityPickerOpen, setCityPickerOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [passengers, setPassengers] = useState(1);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [passengersOpen, setPassengersOpen] = useState(false);
   
   const { data: destinations } = useDestinations();
   const { data: flights, isLoading: flightsLoading } = useDamascusFlights(
@@ -173,6 +180,83 @@ const Index = () => {
                 </div>
               </div>
 
+              {/* Date & Passengers Row */}
+              <div className="flex items-center border-b">
+                {/* Date Picker */}
+                <div className="flex-1 p-4 border-l">
+                  <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                    <PopoverTrigger asChild>
+                      <button className="flex items-center gap-3 w-full hover:bg-muted/50 rounded-lg transition-colors p-2 -m-2">
+                        <CalendarIcon className="h-5 w-5 text-primary" />
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">التاريخ</p>
+                          <p className="font-medium">
+                            {format(selectedDate, "d MMMM", { locale: ar })}
+                          </p>
+                        </div>
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={(date) => {
+                          if (date) {
+                            setSelectedDate(date);
+                            setDatePickerOpen(false);
+                          }
+                        }}
+                        disabled={(date) => date < new Date()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Passengers Selector */}
+                <div className="flex-1 p-4">
+                  <Popover open={passengersOpen} onOpenChange={setPassengersOpen}>
+                    <PopoverTrigger asChild>
+                      <button className="flex items-center gap-3 w-full hover:bg-muted/50 rounded-lg transition-colors p-2 -m-2">
+                        <Users className="h-5 w-5 text-primary" />
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">المسافرين</p>
+                          <p className="font-medium">
+                            {passengers} {passengers === 1 ? 'مسافر' : 'مسافرين'}
+                          </p>
+                        </div>
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56" align="start">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">بالغين</span>
+                        <div className="flex items-center gap-3">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 rounded-full"
+                            onClick={() => setPassengers(Math.max(1, passengers - 1))}
+                            disabled={passengers <= 1}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span className="w-6 text-center font-bold">{passengers}</span>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 rounded-full"
+                            onClick={() => setPassengers(Math.min(9, passengers + 1))}
+                            disabled={passengers >= 9}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+
               {/* Location Detection */}
               {isDetecting && (
                 <div className="flex items-center justify-center gap-2 py-3 bg-muted/50">
@@ -187,6 +271,28 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="max-w-3xl mx-auto px-4 -mt-8">
+        {/* Search Summary */}
+        <div className="bg-card rounded-lg shadow-sm p-3 mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="font-medium">
+              {tripDirection === 'to' ? (userDestination?.city_ar || 'موقعك') : 'دمشق'}
+            </span>
+            <span className="text-muted-foreground">←</span>
+            <span className="font-medium">
+              {tripDirection === 'to' ? 'دمشق' : (userDestination?.city_ar || 'موقعك')}
+            </span>
+            <span className="text-muted-foreground">•</span>
+            <span>{format(selectedDate, "d MMMM", { locale: ar })}</span>
+            <span className="text-muted-foreground">•</span>
+            <span>{passengers} {passengers === 1 ? 'مسافر' : 'مسافرين'}</span>
+          </div>
+          {passengers > 1 && cheapestFlight?.price_usd && (
+            <Badge variant="outline" className="text-primary border-primary/30">
+              الإجمالي من ${cheapestFlight.price_usd * passengers}
+            </Badge>
+          )}
+        </div>
+
         {/* Flights List */}
         <div className="space-y-3 mb-12">
           <div className="flex items-center justify-between mb-4">
@@ -209,7 +315,12 @@ const Index = () => {
             </Card>
           ) : flights && flights.length > 0 ? (
             flights.map((flight) => (
-              <FlightCard key={flight.id} flight={flight} cheapestPrice={cheapestFlight?.price_usd} />
+              <FlightCard 
+                key={flight.id} 
+                flight={flight} 
+                cheapestPrice={cheapestFlight?.price_usd}
+                passengers={passengers}
+              />
             ))
           ) : (
             <Card className="py-16 text-center border-dashed">
@@ -309,7 +420,7 @@ function CitySelector({
 }
 
 // Flight Card - Google Flights Style
-function FlightCard({ flight, cheapestPrice }: { flight: Flight; cheapestPrice?: number | null }) {
+function FlightCard({ flight, cheapestPrice, passengers = 1 }: { flight: Flight; cheapestPrice?: number | null; passengers?: number }) {
   const formatTime = (time: string) => time.slice(0, 5);
   
   const formatDuration = (minutes: number) => {
@@ -319,6 +430,7 @@ function FlightCard({ flight, cheapestPrice }: { flight: Flight; cheapestPrice?:
   };
 
   const isCheapest = cheapestPrice && flight.price_usd === cheapestPrice;
+  const totalPrice = flight.price_usd ? flight.price_usd * passengers : null;
 
   return (
     <Card className={cn(
@@ -354,12 +466,26 @@ function FlightCard({ flight, cheapestPrice }: { flight: Flight; cheapestPrice?:
 
           {/* Price & Book */}
           <div className="text-left flex-shrink-0">
-            <p className={cn(
-              "text-xl font-bold",
-              isCheapest ? "text-green-600" : "text-foreground"
-            )}>
-              {flight.price_usd ? `$${flight.price_usd}` : '-'}
-            </p>
+            {passengers > 1 && totalPrice ? (
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  ${flight.price_usd} × {passengers}
+                </p>
+                <p className={cn(
+                  "text-xl font-bold",
+                  isCheapest ? "text-green-600" : "text-foreground"
+                )}>
+                  ${totalPrice}
+                </p>
+              </div>
+            ) : (
+              <p className={cn(
+                "text-xl font-bold",
+                isCheapest ? "text-green-600" : "text-foreground"
+              )}>
+                {flight.price_usd ? `$${flight.price_usd}` : '-'}
+              </p>
+            )}
             {flight.airline?.website_url && (
               <Button asChild size="sm" className="mt-2">
                 <a href={flight.airline.website_url} target="_blank" rel="noopener noreferrer">
