@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Plane, Loader2, ArrowLeftRight, ExternalLink, Clock, ChevronDown, Check } from "lucide-react";
+import { Plane, Loader2, ArrowLeftRight, ExternalLink, Clock, ChevronDown, Check, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,11 +27,17 @@ const countryToAirport: Record<string, string> = {
   'IQ': 'BGW', 'RU': 'SVO',
 };
 
+const MONTHS_AR = [
+  'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+  'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+];
+
 const Index = () => {
   const [userLocation, setUserLocation] = useState<string | null>(null);
   const [isDetecting, setIsDetecting] = useState(true);
   const [tripDirection, setTripDirection] = useState<'to' | 'from'>('to');
   const [cityPickerOpen, setCityPickerOpen] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   
   const { data: destinations } = useDestinations();
   const { data: flights, isLoading: flightsLoading } = useDamascusFlights(
@@ -81,115 +87,150 @@ const Index = () => {
     setCityPickerOpen(false);
   };
 
+  // Get cheapest flight for display
+  const cheapestFlight = useMemo(() => {
+    if (!flights || flights.length === 0) return null;
+    return flights.reduce((min, flight) => 
+      (flight.price_usd && (!min.price_usd || flight.price_usd < min.price_usd)) ? flight : min
+    , flights[0]);
+  }, [flights]);
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/5 to-background" dir="rtl">
-      {/* Simple Header */}
-      <header className="py-6 text-center">
-        <div className="flex items-center justify-center gap-3 mb-2">
-          <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center">
-            <Plane className="h-6 w-6 text-primary-foreground" />
+    <div className="min-h-screen bg-background" dir="rtl">
+      {/* Hero Section - Google Flights Style */}
+      <div className="relative bg-muted/30 pb-24">
+        {/* Simple Header */}
+        <header className="py-6 px-4">
+          <div className="max-w-3xl mx-auto flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+              <Plane className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <h1 className="text-xl font-medium text-foreground">رحلات دمشق</h1>
           </div>
-          <h1 className="text-2xl font-bold">رحلات دمشق</h1>
+        </header>
+
+        {/* Main Title */}
+        <div className="text-center py-8">
+          <h2 className="text-4xl md:text-5xl font-normal text-foreground">رحلات</h2>
         </div>
-        <p className="text-muted-foreground text-sm">ابحث عن رحلتك بسهولة</p>
-      </header>
+
+        {/* Search Card - Floating */}
+        <div className="max-w-3xl mx-auto px-4">
+          <Card className="shadow-lg border-0 rounded-xl overflow-hidden">
+            <CardContent className="p-0">
+              {/* Route Selection */}
+              <div className="flex items-center border-b">
+                {/* From */}
+                <div className="flex-1 p-4 border-l">
+                  <p className="text-xs text-muted-foreground mb-1">من أين؟</p>
+                  {tripDirection === 'to' ? (
+                    <CitySelector
+                      destinations={otherDestinations}
+                      selectedCode={userLocation}
+                      onSelect={handleSelectCity}
+                      isOpen={cityPickerOpen}
+                      setIsOpen={setCityPickerOpen}
+                      isDetecting={isDetecting}
+                      selectedCity={userDestination}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-medium">دمشق</span>
+                      <span className="text-sm text-muted-foreground">DAM</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Swap Button */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full h-10 w-10 mx-2 hover:bg-muted"
+                  onClick={toggleDirection}
+                >
+                  <ArrowLeftRight className="h-4 w-4 text-primary" />
+                </Button>
+
+                {/* To */}
+                <div className="flex-1 p-4">
+                  <p className="text-xs text-muted-foreground mb-1">إلى أين؟</p>
+                  {tripDirection === 'from' ? (
+                    <CitySelector
+                      destinations={otherDestinations}
+                      selectedCode={userLocation}
+                      onSelect={handleSelectCity}
+                      isOpen={cityPickerOpen}
+                      setIsOpen={setCityPickerOpen}
+                      isDetecting={isDetecting}
+                      selectedCity={userDestination}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-medium">دمشق</span>
+                      <span className="text-sm text-muted-foreground">DAM</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Location Detection */}
+              {isDetecting && (
+                <div className="flex items-center justify-center gap-2 py-3 bg-muted/50">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <span className="text-sm text-muted-foreground">جاري تحديد موقعك...</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       {/* Main Content */}
-      <main className="container max-w-2xl px-4 pb-12">
-        {/* Route Display */}
-        <Card className="mb-6 overflow-hidden">
-          <CardContent className="p-0">
-            <div className="flex items-center">
-              {/* From */}
-              <div className="flex-1 p-5 text-center">
-                <p className="text-xs text-muted-foreground mb-1">من</p>
-                {tripDirection === 'to' ? (
-                  <CitySelector
-                    destinations={otherDestinations}
-                    selectedCode={userLocation}
-                    onSelect={handleSelectCity}
-                    isOpen={cityPickerOpen}
-                    setIsOpen={setCityPickerOpen}
-                    isDetecting={isDetecting}
-                    selectedCity={userDestination}
-                  />
-                ) : (
-                  <div>
-                    <p className="text-xl font-bold">دمشق</p>
-                    <p className="text-sm text-muted-foreground">DAM</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Swap Button */}
-              <Button
-                variant="outline"
-                size="icon"
-                className="rounded-full h-12 w-12 border-2 flex-shrink-0 hover:bg-primary hover:text-primary-foreground transition-all"
-                onClick={toggleDirection}
-              >
-                <ArrowLeftRight className="h-5 w-5" />
-              </Button>
-
-              {/* To */}
-              <div className="flex-1 p-5 text-center">
-                <p className="text-xs text-muted-foreground mb-1">إلى</p>
-                {tripDirection === 'from' ? (
-                  <CitySelector
-                    destinations={otherDestinations}
-                    selectedCode={userLocation}
-                    onSelect={handleSelectCity}
-                    isOpen={cityPickerOpen}
-                    setIsOpen={setCityPickerOpen}
-                    isDetecting={isDetecting}
-                    selectedCity={userDestination}
-                  />
-                ) : (
-                  <div>
-                    <p className="text-xl font-bold">دمشق</p>
-                    <p className="text-sm text-muted-foreground">DAM</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Location Detection Message */}
-        {isDetecting && (
-          <div className="flex items-center justify-center gap-2 text-muted-foreground mb-6">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-sm">جاري تحديد موقعك...</span>
-          </div>
-        )}
-
+      <main className="max-w-3xl mx-auto px-4 -mt-8">
         {/* Flights List */}
-        <div className="space-y-3">
-          <h2 className="font-bold text-lg mb-4">
-            {flightsLoading ? 'جاري البحث...' : `${flights?.length || 0} رحلة متاحة`}
-          </h2>
+        <div className="space-y-3 mb-12">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-medium text-lg">
+              {flightsLoading ? 'جاري البحث...' : `${flights?.length || 0} رحلة متاحة`}
+            </h3>
+            {cheapestFlight?.price_usd && (
+              <Badge variant="secondary" className="bg-green-50 text-green-700 border-0">
+                أرخص سعر: ${cheapestFlight.price_usd}
+              </Badge>
+            )}
+          </div>
 
           {flightsLoading ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-              <p className="text-muted-foreground">جاري البحث عن أفضل الرحلات...</p>
-            </div>
+            <Card className="py-16">
+              <div className="flex flex-col items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                <p className="text-muted-foreground">جاري البحث عن أفضل الرحلات...</p>
+              </div>
+            </Card>
           ) : flights && flights.length > 0 ? (
             flights.map((flight) => (
-              <FlightCard key={flight.id} flight={flight} />
+              <FlightCard key={flight.id} flight={flight} cheapestPrice={cheapestFlight?.price_usd} />
             ))
           ) : (
-            <Card className="py-16 text-center">
+            <Card className="py-16 text-center border-dashed">
               <Plane className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
               <p className="text-muted-foreground">لا توجد رحلات متاحة حالياً</p>
               <p className="text-sm text-muted-foreground mt-1">جرب اختيار مدينة أخرى</p>
             </Card>
           )}
         </div>
+
+        {/* Cheapest Flights Calendar Section */}
+        <CheapestFlightsSection 
+          selectedMonth={selectedMonth}
+          onMonthChange={setSelectedMonth}
+          flights={flights}
+          userCity={userDestination?.city_ar || 'موقعك'}
+        />
       </main>
 
-      {/* Simple Footer */}
-      <footer className="py-6 text-center border-t bg-muted/30">
+      {/* Footer */}
+      <footer className="py-8 text-center border-t bg-muted/20">
         <p className="text-sm text-muted-foreground">
           © {new Date().getFullYear()} رحلات دمشق
         </p>
@@ -219,19 +260,19 @@ function CitySelector({
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <button className="group cursor-pointer hover:opacity-80 transition-opacity">
-          <div className="flex items-center justify-center gap-1">
-            <p className="text-xl font-bold">
+        <button className="flex items-center gap-2 hover:text-primary transition-colors text-right">
+          <div>
+            <span className="text-lg font-medium block">
               {isDetecting ? 'جاري التحديد...' : (selectedCity?.city_ar || 'اختر مدينة')}
-            </p>
-            <ChevronDown className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            </span>
+            <span className="text-sm text-muted-foreground">
+              {selectedCode || '...'}
+            </span>
           </div>
-          <p className="text-sm text-muted-foreground">
-            {selectedCode || '...'}
-          </p>
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-0" align="center">
+      <PopoverContent className="w-72 p-0" align="start">
         <Command>
           <CommandInput placeholder="ابحث عن مدينة..." className="text-right" />
           <CommandList>
@@ -247,7 +288,7 @@ function CitySelector({
                   <div className="flex items-center gap-2">
                     <Check
                       className={cn(
-                        "h-4 w-4",
+                        "h-4 w-4 text-primary",
                         selectedCode === dest.airport_code ? "opacity-100" : "opacity-0"
                       )}
                     />
@@ -267,53 +308,60 @@ function CitySelector({
   );
 }
 
-// Simplified Flight Card
-function FlightCard({ flight }: { flight: Flight }) {
+// Flight Card - Google Flights Style
+function FlightCard({ flight, cheapestPrice }: { flight: Flight; cheapestPrice?: number | null }) {
   const formatTime = (time: string) => time.slice(0, 5);
   
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    return `${hours}س ${mins > 0 ? `${mins}د` : ''}`;
+    return `${hours} س ${mins > 0 ? `${mins} د` : ''}`;
   };
 
+  const isCheapest = cheapestPrice && flight.price_usd === cheapestPrice;
+
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className={cn(
+      "hover:shadow-md transition-all border",
+      isCheapest && "ring-2 ring-green-200 border-green-200"
+    )}>
       <CardContent className="p-4">
         <div className="flex items-center gap-4">
-          {/* Airline */}
-          <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <span className="font-bold text-primary">{flight.airline?.code}</span>
+          {/* Airline Logo */}
+          <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+            <span className="font-bold text-primary text-sm">{flight.airline?.code}</span>
           </div>
 
           {/* Flight Info */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-bold">{formatTime(flight.departure_time)}</span>
-              <span className="text-muted-foreground">→</span>
-              <span className="font-bold">{formatTime(flight.arrival_time)}</span>
+            <div className="flex items-center gap-3 mb-1">
+              <span className="text-lg font-medium">{formatTime(flight.departure_time)}</span>
+              <div className="flex-1 flex items-center gap-1 px-2">
+                <div className="h-px flex-1 bg-border"></div>
+                <span className="text-xs text-muted-foreground px-1">{formatDuration(flight.duration_minutes)}</span>
+                <div className="h-px flex-1 bg-border"></div>
+              </div>
+              <span className="text-lg font-medium">{formatTime(flight.arrival_time)}</span>
             </div>
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {formatDuration(flight.duration_minutes)}
-              </span>
-              <Badge variant={flight.stops === 0 ? "default" : "secondary"} className="text-xs">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>{flight.airline?.name_ar}</span>
+              <span>•</span>
+              <Badge variant={flight.stops === 0 ? "default" : "secondary"} className="text-xs h-5">
                 {flight.stops === 0 ? "مباشرة" : `${flight.stops} توقف`}
               </Badge>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {flight.airline?.name_ar}
-            </p>
           </div>
 
           {/* Price & Book */}
           <div className="text-left flex-shrink-0">
-            <p className="text-xl font-bold text-primary">
+            <p className={cn(
+              "text-xl font-bold",
+              isCheapest ? "text-green-600" : "text-foreground"
+            )}>
               {flight.price_usd ? `$${flight.price_usd}` : '-'}
             </p>
             {flight.airline?.website_url && (
-              <Button asChild size="sm" variant="outline" className="mt-2 w-full">
+              <Button asChild size="sm" className="mt-2">
                 <a href={flight.airline.website_url} target="_blank" rel="noopener noreferrer">
                   احجز
                   <ExternalLink className="h-3 w-3 mr-1" />
@@ -324,6 +372,127 @@ function FlightCard({ flight }: { flight: Flight }) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// Cheapest Flights Section
+function CheapestFlightsSection({ 
+  selectedMonth, 
+  onMonthChange,
+  flights,
+  userCity
+}: { 
+  selectedMonth: number;
+  onMonthChange: (month: number) => void;
+  flights?: Flight[];
+  userCity: string;
+}) {
+  const currentYear = new Date().getFullYear();
+  
+  // Generate mock calendar data (in real app, this would come from API)
+  const calendarData = useMemo(() => {
+    const daysInMonth = new Date(currentYear, selectedMonth + 1, 0).getDate();
+    const data: { day: number; price: number | null }[] = [];
+    
+    for (let i = 1; i <= daysInMonth; i++) {
+      // Mock prices - in real app, get from database
+      const hasPrice = Math.random() > 0.3;
+      const basePrice = flights?.[0]?.price_usd || 150;
+      const price = hasPrice ? Math.floor(basePrice + (Math.random() - 0.5) * 100) : null;
+      data.push({ day: i, price });
+    }
+    return data;
+  }, [selectedMonth, flights]);
+
+  const minPrice = useMemo(() => {
+    const prices = calendarData.filter(d => d.price !== null).map(d => d.price!);
+    return prices.length > 0 ? Math.min(...prices) : null;
+  }, [calendarData]);
+
+  const handlePrevMonth = () => {
+    onMonthChange(selectedMonth === 0 ? 11 : selectedMonth - 1);
+  };
+
+  const handleNextMonth = () => {
+    onMonthChange(selectedMonth === 11 ? 0 : selectedMonth + 1);
+  };
+
+  return (
+    <section className="mb-12">
+      <Card className="overflow-hidden">
+        <div className="bg-muted/50 p-4 border-b">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-primary" />
+              <h3 className="font-medium">أرخص الرحلات من {userCity} إلى دمشق</h3>
+            </div>
+            
+            {/* Month Selector */}
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePrevMonth}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <span className="font-medium min-w-24 text-center">
+                {MONTHS_AR[selectedMonth]} {currentYear}
+              </span>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNextMonth}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+        
+        <CardContent className="p-4">
+          {/* Calendar Grid */}
+          <div className="grid grid-cols-7 gap-1 text-center">
+            {/* Day Headers */}
+            {['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'].map((day) => (
+              <div key={day} className="text-xs text-muted-foreground py-2 font-medium">
+                {day}
+              </div>
+            ))}
+            
+            {/* Empty cells for alignment */}
+            {Array.from({ length: new Date(currentYear, selectedMonth, 1).getDay() }).map((_, i) => (
+              <div key={`empty-${i}`} className="p-2"></div>
+            ))}
+            
+            {/* Calendar Days */}
+            {calendarData.map(({ day, price }) => (
+              <button
+                key={day}
+                className={cn(
+                  "p-2 rounded-lg transition-colors text-center hover:bg-muted",
+                  price === minPrice && "bg-green-50 hover:bg-green-100"
+                )}
+              >
+                <span className="text-sm font-medium block">{day}</span>
+                {price ? (
+                  <span className={cn(
+                    "text-xs",
+                    price === minPrice ? "text-green-600 font-bold" : "text-muted-foreground"
+                  )}>
+                    ${price}
+                  </span>
+                ) : (
+                  <span className="text-xs text-muted-foreground/50">-</span>
+                )}
+              </button>
+            ))}
+          </div>
+          
+          {/* Legend */}
+          {minPrice && (
+            <div className="mt-4 pt-4 border-t flex items-center justify-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded bg-green-100"></div>
+                <span className="text-muted-foreground">أرخص سعر: ${minPrice}</span>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </section>
   );
 }
 
