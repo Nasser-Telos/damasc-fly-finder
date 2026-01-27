@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Plane, Loader2, ArrowLeftRight, ExternalLink, ChevronDown, Check, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Users, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,11 +46,17 @@ const Index = () => {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [passengersOpen, setPassengersOpen] = useState(false);
   
+  const calendarSectionRef = useRef<HTMLDivElement>(null);
+  
   const { data: destinations } = useDestinations();
   const { data: flights, isLoading: flightsLoading } = useDamascusFlights(
     tripDirection === 'to' ? 'to' : 'from',
     userLocation || undefined
   );
+  
+  const scrollToCalendar = () => {
+    calendarSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   // Non-Damascus destinations
   const otherDestinations = useMemo(() => {
@@ -293,6 +299,13 @@ const Index = () => {
           )}
         </div>
 
+        {/* Deals Banner - Google Flights Style */}
+        <DealsBanner 
+          userCity={userDestination?.city_ar || 'موقعك'}
+          cheapestPrice={cheapestFlight?.price_usd}
+          onScrollToCalendar={scrollToCalendar}
+        />
+
         {/* Flights List */}
         <div className="space-y-3 mb-12">
           <div className="flex items-center justify-between mb-4">
@@ -332,12 +345,14 @@ const Index = () => {
         </div>
 
         {/* Cheapest Flights Calendar Section */}
-        <CheapestFlightsSection 
-          selectedMonth={selectedMonth}
-          onMonthChange={setSelectedMonth}
-          flights={flights}
-          userCity={userDestination?.city_ar || 'موقعك'}
-        />
+        <div ref={calendarSectionRef}>
+          <CheapestFlightsSection 
+            selectedMonth={selectedMonth}
+            onMonthChange={setSelectedMonth}
+            flights={flights}
+            userCity={userDestination?.city_ar || 'موقعك'}
+          />
+        </div>
       </main>
 
       {/* Footer */}
@@ -416,6 +431,59 @@ function CitySelector({
         </Command>
       </PopoverContent>
     </Popover>
+  );
+}
+
+// Deals Banner - Google Flights Style
+function DealsBanner({ 
+  userCity, 
+  cheapestPrice,
+  onScrollToCalendar 
+}: { 
+  userCity: string;
+  cheapestPrice?: number;
+  onScrollToCalendar: () => void;
+}) {
+  const currentMonth = MONTHS_AR[new Date().getMonth()];
+  
+  return (
+    <Card className="mb-6 border border-blue-100 bg-gradient-to-l from-blue-50/80 to-white overflow-hidden">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-4">
+          {/* Icon */}
+          <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <CalendarIcon className="h-6 w-6 text-primary" />
+          </div>
+          
+          {/* Text Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <h4 className="font-semibold text-foreground">
+                أرخص الرحلات هذا الشهر
+              </h4>
+              {cheapestPrice && (
+                <Badge className="bg-green-100 text-green-700 border-0 text-xs">
+                  من ${cheapestPrice}
+                </Badge>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              شاهد أفضل الأسعار للرحلات من {userCity} إلى دمشق خلال {currentMonth}
+            </p>
+          </div>
+          
+          {/* Button */}
+          <Button 
+            variant="outline" 
+            className="text-primary border-primary/30 hover:bg-blue-50 flex-shrink-0 gap-2"
+            onClick={onScrollToCalendar}
+          >
+            <CalendarIcon className="h-4 w-4" />
+            عرض التقويم
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
