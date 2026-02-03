@@ -199,24 +199,36 @@ const Index = () => {
       {/* Hero Section with Syrian Illustration - Seamless blend */}
       <div className="relative">
         {/* Hero Image - Seamlessly blended with background */}
-        <div className="w-full flex justify-center pt-4 sm:pt-6 relative overflow-hidden">
-          {/* Gradient overlays for seamless blending */}
-          <div className="absolute inset-0 pointer-events-none">
-            {/* Left fade */}
-            <div className="absolute top-0 bottom-0 left-0 w-16 sm:w-24 bg-gradient-to-r from-background to-transparent z-10" />
-            {/* Right fade */}
-            <div className="absolute top-0 bottom-0 right-0 w-16 sm:w-24 bg-gradient-to-l from-background to-transparent z-10" />
-            {/* Bottom fade */}
-            <div className="absolute bottom-0 left-0 right-0 h-12 sm:h-16 bg-gradient-to-t from-background to-transparent z-10" />
-            {/* Top subtle fade */}
-            <div className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-background to-transparent z-10" />
+        <div className="w-full flex justify-center relative overflow-hidden" style={{ minHeight: '160px' }}>
+          {/* Strong gradient overlays for complete seamless blending */}
+          <div className="absolute inset-0 pointer-events-none z-10">
+            {/* Left fade - stronger */}
+            <div 
+              className="absolute top-0 bottom-0 left-0 w-24 sm:w-32 md:w-48" 
+              style={{ background: 'linear-gradient(to right, hsl(var(--background)) 0%, hsl(var(--background)) 30%, transparent 100%)' }}
+            />
+            {/* Right fade - stronger */}
+            <div 
+              className="absolute top-0 bottom-0 right-0 w-24 sm:w-32 md:w-48" 
+              style={{ background: 'linear-gradient(to left, hsl(var(--background)) 0%, hsl(var(--background)) 30%, transparent 100%)' }}
+            />
+            {/* Bottom fade - stronger */}
+            <div 
+              className="absolute bottom-0 left-0 right-0 h-16 sm:h-20" 
+              style={{ background: 'linear-gradient(to top, hsl(var(--background)) 0%, hsl(var(--background)) 40%, transparent 100%)' }}
+            />
+            {/* Top fade - stronger */}
+            <div 
+              className="absolute top-0 left-0 right-0 h-12 sm:h-16" 
+              style={{ background: 'linear-gradient(to bottom, hsl(var(--background)) 0%, hsl(var(--background)) 40%, transparent 100%)' }}
+            />
           </div>
           
           <img 
             src={syriaHeroImage} 
             alt="رحلات سوريا - معالم دمشق وحلب"
-            className="w-full max-w-4xl h-auto object-contain"
-            style={{ maxHeight: '200px' }}
+            className="w-full max-w-5xl h-auto object-contain"
+            style={{ maxHeight: '220px' }}
           />
         </div>
 
