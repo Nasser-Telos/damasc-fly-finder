@@ -469,18 +469,19 @@ const Index = () => {
                   </div>
                 )}
 
-                {/* Search Button - Centered at Bottom */}
-                <div className="flex justify-center -mb-6 relative z-10">
-                  <Button 
-                    size="lg"
-                    className="h-12 px-8 rounded-full shadow-md gap-2"
-                    onClick={handleSearch}
-                  >
-                    <Search className="h-5 w-5" />
-                    الاستكشاف
-                  </Button>
-                </div>
               </CardContent>
+              
+              {/* Search Button - Centered at Bottom of Card */}
+              <div className="flex justify-center -mt-1 pb-4">
+                <Button 
+                  size="lg"
+                  className="h-12 px-8 rounded-full shadow-md gap-2"
+                  onClick={handleSearch}
+                >
+                  <Search className="h-5 w-5" />
+                  ابحث
+                </Button>
+              </div>
             </Card>
           )}
         </div>
