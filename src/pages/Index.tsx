@@ -196,16 +196,23 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Hero Section with Syrian Illustration */}
+      {/* Hero Section with Syrian Illustration - Google Flights Style */}
       <div className="relative">
-        {/* Hero Image Banner */}
-        <div className="w-full h-[120px] sm:h-[140px] md:h-[160px] overflow-hidden rounded-b-3xl">
+        {/* Hero Image - Full width, contained to show complete image */}
+        <div className="w-full flex justify-center bg-background pt-4 pb-2 sm:pt-6 sm:pb-4">
           <img 
             src={syriaHeroImage} 
             alt="رحلات سوريا - معالم دمشق وحلب"
-            className="w-full h-full object-cover"
-            style={{ objectPosition: 'center 60%' }}
+            className="w-full max-w-3xl h-auto object-contain px-4"
+            style={{ maxHeight: '180px' }}
           />
+        </div>
+
+        {/* Title - Like Google Flights */}
+        <div className="text-center py-4 sm:py-6">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-normal text-foreground">
+            رحلات طيران
+          </h1>
         </div>
 
         {/* Search Card */}
