@@ -198,31 +198,14 @@ const Index = () => {
 
       {/* Hero Section with Syrian Illustration */}
       <div className="relative">
-        {/* Hero Background Image */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {/* Background gradient */}
-          <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-background" />
-          
-          {/* Syrian Illustration */}
-          <div className="absolute top-0 left-0 right-0 h-[200px] sm:h-[260px] md:h-[320px] lg:h-[380px]">
-            <img 
-              src={syriaHeroImage} 
-              alt="رحلات سوريا - معالم دمشق وحلب"
-              className="w-full h-full object-cover object-center"
-              style={{ 
-                objectPosition: 'center 70%',
-              }}
-            />
-            {/* Gradient overlay for smooth transition */}
-            <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
-          </div>
-        </div>
-
-        {/* Title - Overlaid on image */}
-        <div className="relative text-center pt-[140px] sm:pt-[180px] md:pt-[220px] lg:pt-[260px] pb-6">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold text-foreground drop-shadow-sm">
-            رحلات طيران
-          </h1>
+        {/* Hero Image Banner */}
+        <div className="w-full h-[120px] sm:h-[140px] md:h-[160px] overflow-hidden rounded-b-3xl">
+          <img 
+            src={syriaHeroImage} 
+            alt="رحلات سوريا - معالم دمشق وحلب"
+            className="w-full h-full object-cover"
+            style={{ objectPosition: 'center 60%' }}
+          />
         </div>
 
         {/* Search Card */}
