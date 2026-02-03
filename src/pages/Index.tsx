@@ -23,6 +23,7 @@ import type { Flight, Destination } from "@/types/flight";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import syriaHeroImage from "@/assets/syria-hero-illustration.png";
 
 // Map countries to their likely airport codes
 const countryToAirport: Record<string, string> = {
@@ -195,36 +196,31 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Hero Section with Background */}
+      {/* Hero Section with Syrian Illustration */}
       <div className="relative">
-        {/* Decorative Background - Google Flights Style */}
+        {/* Hero Background Image */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 left-0 right-0 h-[280px] bg-gradient-to-b from-[hsl(217,91%,95%)] to-background" />
-          <svg 
-            className="absolute top-0 left-0 right-0 w-full h-[280px] opacity-50"
-            viewBox="0 0 1440 280" 
-            preserveAspectRatio="none"
-          >
-            <path 
-              fill="hsl(217, 91%, 85%)" 
-              d="M0,140 C200,80 400,180 600,120 C800,60 1000,140 1200,100 C1400,60 1440,100 1440,100 L1440,0 L0,0 Z"
-              opacity="0.3"
+          {/* Background gradient */}
+          <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-background" />
+          
+          {/* Syrian Illustration */}
+          <div className="absolute top-0 left-0 right-0 h-[200px] sm:h-[260px] md:h-[320px] lg:h-[380px]">
+            <img 
+              src={syriaHeroImage} 
+              alt="رحلات سوريا - معالم دمشق وحلب"
+              className="w-full h-full object-cover object-center"
+              style={{ 
+                objectPosition: 'center 70%',
+              }}
             />
-            <path 
-              fill="hsl(217, 91%, 90%)" 
-              d="M0,100 C150,140 350,60 550,100 C750,140 950,80 1150,120 C1350,160 1440,120 1440,120 L1440,0 L0,0 Z"
-              opacity="0.2"
-            />
-          </svg>
-          {/* Plane silhouette */}
-          <div className="absolute top-12 left-1/2 -translate-x-1/2">
-            <Plane className="h-10 w-10 text-primary/10 -rotate-45" />
+            {/* Gradient overlay for smooth transition */}
+            <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
           </div>
         </div>
 
-        {/* Title - Google Flights Style */}
-        <div className="relative text-center py-10 pb-6">
-          <h1 className="text-4xl md:text-5xl font-normal text-foreground">
+        {/* Title - Overlaid on image */}
+        <div className="relative text-center pt-[140px] sm:pt-[180px] md:pt-[220px] lg:pt-[260px] pb-6">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold text-foreground drop-shadow-sm">
             رحلات طيران
           </h1>
         </div>
