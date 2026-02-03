@@ -292,9 +292,12 @@ const Index = () => {
 
         {/* Title - Like Google Flights */}
         <div className="text-center py-3 sm:py-5">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-normal text-foreground">
-            رحلات طيران
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-normal text-foreground">
+            كل شركات الطيران... بنقرة واحدة
           </h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-2">
+            ابحث مرة. قارن الكل. احجز الأفضل.
+          </p>
         </div>
 
         {/* Search Card - Same design for Damascus and Aleppo */}
