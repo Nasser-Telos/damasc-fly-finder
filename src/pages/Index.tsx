@@ -196,20 +196,32 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Hero Section with Syrian Illustration - Google Flights Style */}
+      {/* Hero Section with Syrian Illustration - Seamless blend */}
       <div className="relative">
-        {/* Hero Image - Full width, contained to show complete image */}
-        <div className="w-full flex justify-center bg-background pt-4 pb-2 sm:pt-6 sm:pb-4">
+        {/* Hero Image - Seamlessly blended with background */}
+        <div className="w-full flex justify-center pt-4 sm:pt-6 relative overflow-hidden">
+          {/* Gradient overlays for seamless blending */}
+          <div className="absolute inset-0 pointer-events-none">
+            {/* Left fade */}
+            <div className="absolute top-0 bottom-0 left-0 w-16 sm:w-24 bg-gradient-to-r from-background to-transparent z-10" />
+            {/* Right fade */}
+            <div className="absolute top-0 bottom-0 right-0 w-16 sm:w-24 bg-gradient-to-l from-background to-transparent z-10" />
+            {/* Bottom fade */}
+            <div className="absolute bottom-0 left-0 right-0 h-12 sm:h-16 bg-gradient-to-t from-background to-transparent z-10" />
+            {/* Top subtle fade */}
+            <div className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-background to-transparent z-10" />
+          </div>
+          
           <img 
             src={syriaHeroImage} 
             alt="رحلات سوريا - معالم دمشق وحلب"
-            className="w-full max-w-3xl h-auto object-contain px-4"
-            style={{ maxHeight: '180px' }}
+            className="w-full max-w-4xl h-auto object-contain"
+            style={{ maxHeight: '200px' }}
           />
         </div>
 
         {/* Title - Like Google Flights */}
-        <div className="text-center py-4 sm:py-6">
+        <div className="text-center py-3 sm:py-5">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-normal text-foreground">
             رحلات طيران
           </h1>
