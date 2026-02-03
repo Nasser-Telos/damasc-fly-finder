@@ -233,254 +233,231 @@ const Index = () => {
               </CardContent>
             </Card>
           ) : (
-            // Damascus Search Card
-            <Card className="shadow-lg border-0 bg-card overflow-visible">
-              <CardContent className="p-0">
-                {/* Top Row - Trip Type, Passengers, Class */}
-                <div className="flex items-center gap-1 p-3 border-b border-border flex-wrap">
-                  {/* Trip Type Selector */}
-                  <Popover open={tripTypeOpen} onOpenChange={setTripTypeOpen}>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        className="h-9 px-3 text-sm font-normal gap-1"
-                      >
-                        <ArrowLeftRight className="h-4 w-4 text-muted-foreground" />
-                        {tripType === 'roundtrip' ? 'رحلة ذهاب وعودة' : 'ذهاب فقط'}
-                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-44 p-1" align="start">
-                      <button 
-                        className="w-full text-right px-3 py-2 text-sm hover:bg-muted rounded flex items-center gap-2"
-                        onClick={() => { setTripType('roundtrip'); setTripTypeOpen(false); }}
-                      >
-                        {tripType === 'roundtrip' && <Check className="h-4 w-4 text-primary" />}
-                        <span className={tripType !== 'roundtrip' ? 'mr-6' : ''}>رحلة ذهاب وعودة</span>
-                      </button>
-                      <button 
-                        className="w-full text-right px-3 py-2 text-sm hover:bg-muted rounded flex items-center gap-2"
-                        onClick={() => { setTripType('oneway'); setTripTypeOpen(false); }}
-                      >
-                        {tripType === 'oneway' && <Check className="h-4 w-4 text-primary" />}
-                        <span className={tripType !== 'oneway' ? 'mr-6' : ''}>ذهاب فقط</span>
-                      </button>
-                    </PopoverContent>
-                  </Popover>
+            // Damascus Search Card - Clean Google Flights Style
+            <Card className="shadow-lg border border-border bg-card rounded-lg overflow-hidden">
+              {/* Top Row - Trip Options */}
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+                {/* Trip Type */}
+                <Popover open={tripTypeOpen} onOpenChange={setTripTypeOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 gap-1 text-sm font-normal">
+                      <ArrowLeftRight className="h-4 w-4" />
+                      {tripType === 'roundtrip' ? 'ذهاب وعودة' : 'ذهاب فقط'}
+                      <ChevronDown className="h-3 w-3 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-40 p-1" align="start">
+                    <button 
+                      className="w-full text-right px-3 py-2 text-sm hover:bg-muted rounded-md flex items-center gap-2"
+                      onClick={() => { setTripType('roundtrip'); setTripTypeOpen(false); }}
+                    >
+                      {tripType === 'roundtrip' && <Check className="h-4 w-4 text-primary" />}
+                      <span className={tripType !== 'roundtrip' ? 'mr-6' : ''}>ذهاب وعودة</span>
+                    </button>
+                    <button 
+                      className="w-full text-right px-3 py-2 text-sm hover:bg-muted rounded-md flex items-center gap-2"
+                      onClick={() => { setTripType('oneway'); setTripTypeOpen(false); }}
+                    >
+                      {tripType === 'oneway' && <Check className="h-4 w-4 text-primary" />}
+                      <span className={tripType !== 'oneway' ? 'mr-6' : ''}>ذهاب فقط</span>
+                    </button>
+                  </PopoverContent>
+                </Popover>
 
-                  {/* Passengers Selector */}
-                  <Popover open={passengersOpen} onOpenChange={setPassengersOpen}>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        className="h-9 px-3 text-sm font-normal gap-1"
-                      >
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        {passengers}
-                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-64 p-4" align="start">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">بالغين</span>
-                        <div className="flex items-center gap-3">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8 rounded-full"
-                            onClick={() => setPassengers(Math.max(1, passengers - 1))}
-                            disabled={passengers <= 1}
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                          <span className="w-6 text-center text-sm">{passengers}</span>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8 rounded-full"
-                            onClick={() => setPassengers(Math.min(9, passengers + 1))}
-                            disabled={passengers >= 9}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      <Button 
-                        className="w-full mt-4"
-                        onClick={() => setPassengersOpen(false)}
-                      >
-                        تم
-                      </Button>
-                    </PopoverContent>
-                  </Popover>
-
-                  {/* Class Selector */}
-                  <Popover open={classTypeOpen} onOpenChange={setClassTypeOpen}>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        className="h-9 px-3 text-sm font-normal gap-1"
-                      >
-                        {classLabels[classType]}
-                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-48 p-1" align="start">
-                      {Object.entries(classLabels).map(([key, label]) => (
-                        <button 
-                          key={key}
-                          className="w-full text-right px-3 py-2 text-sm hover:bg-muted rounded flex items-center gap-2"
-                          onClick={() => { setClassType(key as any); setClassTypeOpen(false); }}
+                {/* Passengers */}
+                <Popover open={passengersOpen} onOpenChange={setPassengersOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 gap-1 text-sm font-normal">
+                      <Users className="h-4 w-4" />
+                      {passengers}
+                      <ChevronDown className="h-3 w-3 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-4" align="start">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">المسافرون</span>
+                      <div className="flex items-center gap-3">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 rounded-full"
+                          onClick={() => setPassengers(Math.max(1, passengers - 1))}
+                          disabled={passengers <= 1}
                         >
-                          {classType === key && <Check className="h-4 w-4 text-primary" />}
-                          <span className={classType !== key ? 'mr-6' : ''}>{label}</span>
-                        </button>
-                      ))}
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                {/* Main Search Row - Mobile Responsive */}
-                <div className="flex flex-col md:flex-row md:items-stretch">
-                  {/* From/To Section */}
-                  <div className="flex-1 flex flex-col md:flex-row relative">
-                    {/* From Input */}
-                    <div className="flex-1 p-3 border-b md:border-b-0 md:border-l border-border">
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 rounded-full border-2 border-border flex items-center justify-center flex-shrink-0">
-                          <div className="w-2 h-2 rounded-full bg-muted-foreground" />
-                        </div>
-                        {tripDirection === 'to' ? (
-                          <CitySelector
-                            destinations={otherDestinations}
-                            selectedCode={userLocation}
-                            onSelect={handleSelectCity}
-                            isOpen={cityPickerOpen}
-                            setIsOpen={setCityPickerOpen}
-                            isDetecting={isDetecting}
-                            selectedCity={userDestination}
-                            placeholder="من أين؟"
-                          />
-                        ) : (
-                          <div className="flex-1">
-                            <span className="text-base text-foreground">دمشق</span>
-                          </div>
-                        )}
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-6 text-center font-medium">{passengers}</span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 rounded-full"
+                          onClick={() => setPassengers(Math.min(9, passengers + 1))}
+                          disabled={passengers >= 9}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
+                    <Button className="w-full mt-4" size="sm" onClick={() => setPassengersOpen(false)}>
+                      تم
+                    </Button>
+                  </PopoverContent>
+                </Popover>
 
-                    {/* Swap Button - Floating */}
-                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 hidden md:block">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="rounded-full h-10 w-10 bg-card shadow-sm"
-                        onClick={toggleDirection}
+                {/* Class */}
+                <Popover open={classTypeOpen} onOpenChange={setClassTypeOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 gap-1 text-sm font-normal">
+                      {classLabels[classType]}
+                      <ChevronDown className="h-3 w-3 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-44 p-1" align="start">
+                    {Object.entries(classLabels).map(([key, label]) => (
+                      <button 
+                        key={key}
+                        className="w-full text-right px-3 py-2 text-sm hover:bg-muted rounded-md flex items-center gap-2"
+                        onClick={() => { setClassType(key as any); setClassTypeOpen(false); }}
                       >
-                        <ArrowLeftRight className="h-4 w-4" />
-                      </Button>
-                    </div>
+                        {classType === key && <Check className="h-4 w-4 text-primary" />}
+                        <span className={classType !== key ? 'mr-6' : ''}>{label}</span>
+                      </button>
+                    ))}
+                  </PopoverContent>
+                </Popover>
+              </div>
 
-                    {/* Mobile Swap Button */}
-                    <div className="flex md:hidden justify-center -my-3 relative z-10">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="rounded-full h-10 w-10 bg-card shadow-sm"
-                        onClick={toggleDirection}
-                      >
-                        <ArrowLeftRight className="h-4 w-4 rotate-90" />
-                      </Button>
+              {/* Search Fields */}
+              <div className="p-4">
+                {/* From/To Row */}
+                <div className="flex flex-col sm:flex-row items-stretch gap-3 sm:gap-0 relative">
+                  {/* From Field */}
+                  <div className="flex-1 flex items-center gap-3 p-3 border border-border rounded-lg sm:rounded-l-none sm:rounded-r-lg sm:border-l-0 bg-background hover:bg-muted/50 transition-colors">
+                    <div className="w-5 h-5 rounded-full border-2 border-muted-foreground flex items-center justify-center flex-shrink-0">
+                      <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground" />
                     </div>
-
-                    {/* To Input */}
-                    <div className="flex-1 p-3 border-b md:border-b-0 md:border-l border-border">
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 rounded-full border-2 border-primary bg-primary flex items-center justify-center flex-shrink-0">
-                          <MapPin className="h-3 w-3 text-primary-foreground" />
-                        </div>
-                        {tripDirection === 'from' ? (
-                          <CitySelector
-                            destinations={otherDestinations}
-                            selectedCode={userLocation}
-                            onSelect={handleSelectCity}
-                            isOpen={cityPickerOpen}
-                            setIsOpen={setCityPickerOpen}
-                            isDetecting={isDetecting}
-                            selectedCity={userDestination}
-                            placeholder="الوجهة"
-                          />
-                        ) : (
-                          <div className="flex-1">
-                            <span className="text-base text-foreground">دمشق</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    {tripDirection === 'to' ? (
+                      <CitySelector
+                        destinations={otherDestinations}
+                        selectedCode={userLocation}
+                        onSelect={handleSelectCity}
+                        isOpen={cityPickerOpen}
+                        setIsOpen={setCityPickerOpen}
+                        isDetecting={isDetecting}
+                        selectedCity={userDestination}
+                        placeholder="من أين؟"
+                      />
+                    ) : (
+                      <span className="text-foreground font-medium">دمشق</span>
+                    )}
                   </div>
 
-                  {/* Date Pickers */}
-                  <div className="flex border-border">
-                    <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-                      <PopoverTrigger asChild>
-                        <button className="flex-1 md:flex-none px-4 py-3 flex items-center gap-2 hover:bg-muted transition-colors border-l border-border">
-                          <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-                          <div className="text-right">
-                            <span className="text-sm">المغادرة</span>
-                            <p className="text-sm font-medium">
-                              {format(selectedDate, "d MMM", { locale: ar })}
-                            </p>
-                          </div>
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="end">
-                        <Calendar
-                          mode="single"
-                          selected={selectedDate}
-                          onSelect={(date) => {
-                            if (date) {
-                              setSelectedDate(date);
-                              setDatePickerOpen(false);
-                            }
-                          }}
-                          disabled={(date) => date < new Date()}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    
-                    {tripType === 'roundtrip' && (
-                      <button className="flex-1 md:flex-none px-4 py-3 flex items-center gap-2 hover:bg-muted transition-colors text-muted-foreground">
-                        <CalendarIcon className="h-5 w-5" />
-                        <div className="text-right">
-                          <span className="text-sm">العودة</span>
-                          <p className="text-sm">اختر تاريخ</p>
-                        </div>
-                      </button>
+                  {/* Swap Button */}
+                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 hidden sm:flex">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="rounded-full h-9 w-9 bg-card border-border shadow-sm"
+                      onClick={toggleDirection}
+                    >
+                      <ArrowLeftRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {/* Mobile Swap */}
+                  <div className="flex sm:hidden justify-center -my-1.5 relative z-10">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="rounded-full h-9 w-9 bg-card shadow-sm"
+                      onClick={toggleDirection}
+                    >
+                      <ArrowLeftRight className="h-4 w-4 rotate-90" />
+                    </Button>
+                  </div>
+
+                  {/* To Field */}
+                  <div className="flex-1 flex items-center gap-3 p-3 border border-border rounded-lg sm:rounded-r-none sm:rounded-l-lg bg-background hover:bg-muted/50 transition-colors">
+                    <MapPin className="h-5 w-5 text-primary flex-shrink-0" />
+                    {tripDirection === 'from' ? (
+                      <CitySelector
+                        destinations={otherDestinations}
+                        selectedCode={userLocation}
+                        onSelect={handleSelectCity}
+                        isOpen={cityPickerOpen}
+                        setIsOpen={setCityPickerOpen}
+                        isDetecting={isDetecting}
+                        selectedCity={userDestination}
+                        placeholder="إلى أين؟"
+                      />
+                    ) : (
+                      <span className="text-foreground font-medium">دمشق</span>
                     )}
                   </div>
                 </div>
 
-                {/* Location Detection Status */}
+                {/* Date Row */}
+                <div className="flex gap-3 mt-3">
+                  {/* Departure Date */}
+                  <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                    <PopoverTrigger asChild>
+                      <button className="flex-1 flex items-center gap-3 p-3 border border-border rounded-lg bg-background hover:bg-muted/50 transition-colors text-right">
+                        <CalendarIcon className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">المغادرة</p>
+                          <p className="text-sm font-medium text-foreground">
+                            {format(selectedDate, "EEE، d MMM", { locale: ar })}
+                          </p>
+                        </div>
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={(date) => {
+                          if (date) {
+                            setSelectedDate(date);
+                            setDatePickerOpen(false);
+                          }
+                        }}
+                        disabled={(date) => date < new Date()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  
+                  {/* Return Date */}
+                  {tripType === 'roundtrip' && (
+                    <button className="flex-1 flex items-center gap-3 p-3 border border-border rounded-lg bg-background hover:bg-muted/50 transition-colors text-right">
+                      <CalendarIcon className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">العودة</p>
+                        <p className="text-sm text-muted-foreground">إضافة تاريخ</p>
+                      </div>
+                    </button>
+                  )}
+                </div>
+
+                {/* Loading State */}
                 {isDetecting && (
-                  <div className="flex items-center justify-center gap-2 py-3 bg-muted">
+                  <div className="flex items-center justify-center gap-2 mt-3 py-2 bg-muted/50 rounded-lg">
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
                     <span className="text-sm text-muted-foreground">جاري تحديد موقعك...</span>
                   </div>
                 )}
 
-              </CardContent>
-              
-              {/* Search Button - Centered at Bottom of Card */}
-              <div className="flex justify-center -mt-1 pb-4">
-                <Button 
-                  size="lg"
-                  className="h-12 px-8 rounded-full shadow-md gap-2"
-                  onClick={handleSearch}
-                >
-                  <Search className="h-5 w-5" />
-                  ابحث
-                </Button>
+                {/* Search Button */}
+                <div className="mt-4 flex justify-center">
+                  <Button 
+                    size="lg"
+                    className="h-11 px-10 rounded-full gap-2 font-medium"
+                    onClick={handleSearch}
+                  >
+                    <Search className="h-5 w-5" />
+                    ابحث
+                  </Button>
+                </div>
               </div>
             </Card>
           )}
