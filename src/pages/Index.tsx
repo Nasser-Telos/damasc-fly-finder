@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, forwardRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plane, Loader2, ArrowLeftRight, ChevronDown, Check, Calendar as CalendarIcon, Users, Minus, Plus, MapPin, Sparkles, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useDestinations, useDamascusFlights } from "@/hooks/useFlights";
+import { useDestinations, useDamascusFlights, useAllFlightsForAirport } from "@/hooks/useFlights";
+import { DealsSection } from "@/components/flight/DealsSection";
 import type { Flight, Destination } from "@/types/flight";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -62,6 +63,10 @@ const Index = () => {
     tripDirection === 'to' ? 'to' : 'from',
     userLocation || undefined
   );
+  
+  // Flights for deals sections
+  const { data: damascusFlights, isLoading: damascusLoading } = useAllFlightsForAirport('DAM');
+  const { data: aleppoFlights, isLoading: aleppoLoading } = useAllFlightsForAirport('ALP');
 
   // Non-Damascus destinations
   const otherDestinations = useMemo(() => {
@@ -527,18 +532,28 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Deals Section - Show for both Damascus and Aleppo */}
-      <main className="max-w-4xl mx-auto px-4 mt-12 pb-16">
-        {/* Deals Banner */}
-        <DealsCard 
-          ref={dealsSectionRef}
-          userCity={userDestination?.city_ar || 'موقعك'}
-          cheapestPrice={cheapestFlight?.price_usd}
-          currentMonth={currentMonth}
-          tripDirection={tripDirection}
-          isLoading={flightsLoading}
-          onExplore={handleSearch}
-          airportName={airportName}
+      {/* Deals Sections */}
+      <main className="max-w-5xl mx-auto px-4 mt-12 pb-16 space-y-8" ref={dealsSectionRef}>
+        {/* Damascus Deals */}
+        <DealsSection
+          title="صفقات رحلات دمشق"
+          subtitle="أرخص الرحلات من وإلى مطار دمشق الدولي هذا الشهر"
+          airportCode="DAM"
+          airportName="دمشق"
+          flights={damascusFlights || []}
+          isLoading={damascusLoading}
+          type="damascus"
+        />
+        
+        {/* Aleppo Deals */}
+        <DealsSection
+          title="صفقات رحلات حلب"
+          subtitle="أرخص الرحلات من وإلى مطار حلب الدولي هذا الشهر"
+          airportCode="ALP"
+          airportName="حلب"
+          flights={aleppoFlights || []}
+          isLoading={aleppoLoading}
+          type="aleppo"
         />
       </main>
 
@@ -613,77 +628,5 @@ function CitySelector({
     </Popover>
   );
 }
-
-// Deals Card Component
-const DealsCard = forwardRef<HTMLDivElement, {
-  userCity: string;
-  cheapestPrice?: number;
-  currentMonth: string;
-  tripDirection: 'to' | 'from';
-  isLoading: boolean;
-  onExplore: () => void;
-  airportName?: string;
-}>(({ userCity, cheapestPrice, currentMonth, tripDirection, isLoading, onExplore, airportName = 'دمشق' }, ref) => {
-  const directionText = tripDirection === 'to' 
-    ? `من ${userCity} إلى ${airportName}`
-    : `من ${airportName} إلى ${userCity}`;
-
-  return (
-    <div ref={ref}>
-      <Card className="border bg-gradient-to-l from-[hsl(217,91%,97%)] to-card hover:shadow-md transition-shadow">
-        <CardContent className="p-5">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            {/* Icon */}
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center flex-shrink-0">
-              <Sparkles className="h-6 w-6 text-primary-foreground" />
-            </div>
-            
-            {/* Content */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <h3 className="text-base font-medium text-foreground">
-                  أرخص الرحلات لهذا الشهر
-                </h3>
-                <Badge variant="secondary" className="text-xs">
-                  {currentMonth}
-                </Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                شاهد أفضل الأسعار للرحلات {directionText}
-              </p>
-              
-              {/* Price Display */}
-              {!isLoading && cheapestPrice && (
-                <div className="mt-3 flex items-baseline gap-2">
-                  <span className="text-sm text-muted-foreground">ابتداءً من</span>
-                  <span className="text-2xl font-semibold text-success">${cheapestPrice}</span>
-                  <span className="text-sm text-muted-foreground">للفرد</span>
-                </div>
-              )}
-              
-              {isLoading && (
-                <div className="mt-3 flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span className="text-sm text-muted-foreground">جاري البحث...</span>
-                </div>
-              )}
-            </div>
-            
-            {/* Button */}
-            <Button 
-              variant="outline"
-              className="flex-shrink-0 text-primary border-primary/30 hover:bg-primary/5"
-              onClick={onExplore}
-            >
-              <Sparkles className="h-4 w-4 ml-2" />
-              استكشف الصفقات
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-});
-DealsCard.displayName = 'DealsCard';
 
 export default Index;

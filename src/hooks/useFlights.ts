@@ -108,3 +108,72 @@ export function useDamascusFlights(type: 'from' | 'to', destinationCode?: string
     },
   });
 }
+
+export function useAleppoFlights(type: 'from' | 'to', destinationCode?: string) {
+  return useQuery({
+    queryKey: ["aleppo-flights", type, destinationCode],
+    queryFn: async () => {
+      const aleppoCode = 'ALP';
+      
+      let query = supabase
+        .from("flights")
+        .select(`
+          *,
+          airline:airlines(*),
+          origin:destinations!flights_origin_id_fkey(*),
+          destination:destinations!flights_destination_id_fkey(*)
+        `)
+        .eq("is_active", true);
+
+      const { data, error } = await query.order("price_usd", { ascending: true });
+
+      if (error) throw error;
+      
+      let flights = data as Flight[];
+      
+      // Filter based on trip type
+      if (type === 'from') {
+        flights = flights.filter(f => f.origin?.airport_code === aleppoCode);
+        if (destinationCode) {
+          flights = flights.filter(f => f.destination?.airport_code === destinationCode);
+        }
+      } else {
+        flights = flights.filter(f => f.destination?.airport_code === aleppoCode);
+        if (destinationCode) {
+          flights = flights.filter(f => f.origin?.airport_code === destinationCode);
+        }
+      }
+      
+      return flights;
+    },
+  });
+}
+
+// Combined flights for deals section (both to and from)
+export function useAllFlightsForAirport(airportCode: string) {
+  return useQuery({
+    queryKey: ["all-flights-airport", airportCode],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("flights")
+        .select(`
+          *,
+          airline:airlines(*),
+          origin:destinations!flights_origin_id_fkey(*),
+          destination:destinations!flights_destination_id_fkey(*)
+        `)
+        .eq("is_active", true)
+        .order("price_usd", { ascending: true });
+
+      if (error) throw error;
+      
+      // Filter flights that are either from or to this airport
+      const flights = (data as Flight[]).filter(
+        f => f.origin?.airport_code === airportCode || f.destination?.airport_code === airportCode
+      );
+      
+      return flights;
+    },
+    enabled: !!airportCode,
+  });
+}
