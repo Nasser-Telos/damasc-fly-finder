@@ -217,10 +217,10 @@ const Index = () => {
               className="absolute bottom-0 left-0 right-0 h-16 sm:h-20" 
               style={{ background: 'linear-gradient(to top, hsl(var(--background)) 0%, hsl(var(--background)) 40%, transparent 100%)' }}
             />
-            {/* Top fade - stronger */}
+            {/* Top fade - subtle to show airplane */}
             <div 
-              className="absolute top-0 left-0 right-0 h-12 sm:h-16" 
-              style={{ background: 'linear-gradient(to bottom, hsl(var(--background)) 0%, hsl(var(--background)) 40%, transparent 100%)' }}
+              className="absolute top-0 left-0 right-0 h-4 sm:h-6" 
+              style={{ background: 'linear-gradient(to bottom, hsl(var(--background)) 0%, transparent 100%)' }}
             />
           </div>
           
