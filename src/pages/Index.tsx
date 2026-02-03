@@ -204,13 +204,13 @@ const Index = () => {
           <div className="absolute inset-0 pointer-events-none z-10">
             {/* Left fade - stronger */}
             <div 
-              className="absolute top-0 bottom-0 left-0 w-24 sm:w-32 md:w-48" 
-              style={{ background: 'linear-gradient(to right, hsl(var(--background)) 0%, hsl(var(--background)) 30%, transparent 100%)' }}
+              className="absolute top-0 bottom-0 left-0 w-[22vw] max-w-[360px]" 
+              style={{ background: 'linear-gradient(to right, hsl(var(--background)) 0%, hsl(var(--background)) 60%, transparent 100%)' }}
             />
             {/* Right fade - stronger */}
             <div 
-              className="absolute top-0 bottom-0 right-0 w-24 sm:w-32 md:w-48" 
-              style={{ background: 'linear-gradient(to left, hsl(var(--background)) 0%, hsl(var(--background)) 30%, transparent 100%)' }}
+              className="absolute top-0 bottom-0 right-0 w-[22vw] max-w-[360px]" 
+              style={{ background: 'linear-gradient(to left, hsl(var(--background)) 0%, hsl(var(--background)) 60%, transparent 100%)' }}
             />
             {/* Bottom fade - stronger */}
             <div 
