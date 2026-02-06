@@ -189,15 +189,18 @@ const Index = () => {
                 {pax}
               </button>
               {menu === "pax" && (
-                <div className="syria-pop syria-pop-pax" onClick={e => e.stopPropagation()}>
-                  <span className="syria-pop-title">عدد المسافرين</span>
-                  <div className="syria-stepper">
-                    <button className="syria-step-btn" onClick={() => setPax(Math.max(1, pax - 1))} disabled={pax <= 1}>−</button>
-                    <span className="syria-step-val">{pax}</span>
-                    <button className="syria-step-btn" onClick={() => setPax(Math.min(9, pax + 1))} disabled={pax >= 9}>+</button>
+                <>
+                  <div className="syria-pop-overlay" onClick={() => setMenu(null)} />
+                  <div className="syria-pop syria-pop-pax" onClick={e => e.stopPropagation()}>
+                    <span className="syria-pop-title">عدد المسافرين</span>
+                    <div className="syria-stepper">
+                      <button className="syria-step-btn" onClick={() => setPax(Math.max(1, pax - 1))} disabled={pax <= 1}>−</button>
+                      <span className="syria-step-val">{pax}</span>
+                      <button className="syria-step-btn" onClick={() => setPax(Math.min(9, pax + 1))} disabled={pax >= 9}>+</button>
+                    </div>
+                    <button className="syria-pop-done" onClick={() => setMenu(null)}>تأكيد</button>
                   </div>
-                  <button className="syria-pop-done" onClick={() => setMenu(null)}>تأكيد</button>
-                </div>
+                </>
               )}
               <button
                 className="syria-pill"
@@ -209,17 +212,20 @@ const Index = () => {
                 </svg>
               </button>
               {menu === "cabin" && (
-                <div className="syria-pop syria-pop-cabin" onClick={e => e.stopPropagation()}>
-                  {Object.entries(cMap).map(([k, v]) => (
-                    <button
-                      key={k}
-                      className={`syria-pop-opt ${cabin === k ? "syria-pop-sel" : ""}`}
-                      onClick={() => { setCabin(k); setMenu(null); }}
-                    >
-                      {v}
-                    </button>
-                  ))}
-                </div>
+                <>
+                  <div className="syria-pop-overlay" onClick={() => setMenu(null)} />
+                  <div className="syria-pop syria-pop-cabin" onClick={e => e.stopPropagation()}>
+                    {Object.entries(cMap).map(([k, v]) => (
+                      <button
+                        key={k}
+                        className={`syria-pop-opt ${cabin === k ? "syria-pop-sel" : ""}`}
+                        onClick={() => { setCabin(k); setMenu(null); }}
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
 
