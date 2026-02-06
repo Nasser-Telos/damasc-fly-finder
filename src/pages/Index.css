@@ -757,12 +757,160 @@
 }
 
 /* ═══ RESPONSIVE ═══ */
+
+/* Mobile overlay for popovers */
+.syria-pop-overlay {
+  display: none;
+}
+
 @media (max-width: 480px) {
   .syria-hero { padding: 12px 20px 4px; }
   .syria-h1 { font-size: 24px; }
   .syria-hero-sub { font-size: 14px; }
-  .syria-inp { padding: 16px 16px; }
-  .syria-date-inp { padding: 16px 16px; }
+  .syria-inp { padding: 14px 14px; }
+  .syria-date-inp { padding: 14px 14px; }
   .syria-cta { height: 54px; font-size: 16px; }
   .syria-card { border-radius: 20px; }
+  
+  /* Pills improvement */
+  .syria-pills {
+    gap: 6px;
+    padding: 10px 12px;
+  }
+  .syria-pill {
+    height: 34px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+  .syria-pill-sep {
+    margin: 0 2px;
+    height: 18px;
+  }
+  
+  /* Form spacing */
+  .syria-form {
+    padding: 14px 14px 20px;
+  }
+  .syria-date-boxes {
+    gap: 8px;
+    margin-top: 12px;
+  }
+  
+  /* Input values */
+  .syria-inp-value {
+    font-size: 16px;
+  }
+  .syria-inp-label {
+    font-size: 11px;
+    letter-spacing: .6px;
+  }
+  
+  /* Explore section */
+  .syria-explore-row {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+  .syria-explore-avi {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+  }
+  .syria-explore-name {
+    font-size: 14px;
+  }
+  .syria-explore-sub {
+    font-size: 12px;
+  }
+  
+  /* Swap button touch target */
+  .syria-swap-circle {
+    width: 44px;
+    height: 44px;
+  }
+  
+  /* Popover → Bottom Sheet */
+  .syria-pop-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: rgba(15, 23, 42, 0.3);
+    backdrop-filter: blur(4px);
+    animation: syria-fadein 0.2s;
+  }
+  .syria-pop-pax,
+  .syria-pop-cabin {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100%;
+    min-width: unset;
+    border-radius: 24px 24px 0 0;
+    animation: syria-sheetup 0.35s cubic-bezier(.22,1,.36,1);
+    z-index: 1000;
+    box-shadow: 0 -4px 32px rgba(0,0,0,.12);
+  }
+  .syria-pop-pax {
+    padding: 20px 24px 32px;
+  }
+  .syria-pop-cabin {
+    padding: 12px 8px 32px;
+  }
+  
+  /* City picker full height */
+  .syria-sheet {
+    max-height: 92vh;
+  }
+  .syria-sh-body {
+    max-height: calc(92vh - 120px);
+  }
+  .syria-sh-row {
+    padding: 14px 20px;
+    min-height: 56px;
+  }
+  .syria-sh-q {
+    height: 50px;
+    font-size: 16px;
+  }
+}
+
+/* Extra small phones */
+@media (max-width: 360px) {
+  .syria-h1 { font-size: 21px; }
+  .syria-hero-sub { font-size: 13px; }
+  .syria-hero { padding: 10px 16px 4px; }
+  .syria-card-area { padding: 0 10px; }
+  
+  .syria-pill {
+    height: 32px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+  .syria-pills {
+    gap: 5px;
+    padding: 8px 10px;
+  }
+  
+  .syria-inp { padding: 12px 12px; }
+  .syria-date-inp { padding: 12px 12px; }
+  .syria-inp-value { font-size: 15px; }
+  .syria-form { padding: 12px 12px 18px; }
+  
+  .syria-explore-sec { padding: 0 10px; }
+  .syria-explore-avi {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+  .syria-explore-row {
+    padding: 12px 14px;
+    gap: 10px;
+    border-radius: 16px;
+  }
+  .syria-explore-name { font-size: 13px; }
+  .syria-explore-sub { font-size: 11px; }
+  
+  .syria-cta { height: 50px; font-size: 15px; border-radius: 25px; }
 }
