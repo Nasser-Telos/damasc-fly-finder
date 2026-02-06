@@ -32,7 +32,7 @@ const Index = () => {
   const [picker, setPicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [pax, setPax] = useState(1);
-  const [trip, setTrip] = useState<'roundtrip' | 'oneway'>('roundtrip');
+  const [trip, setTrip] = useState<'roundtrip' | 'oneway'>('oneway');
   const [cabin, setCabin] = useState<string>('economy');
   const [menu, setMenu] = useState<string | null>(null);
   const [tab, setTab] = useState<AirportTab>('dam');
@@ -166,16 +166,16 @@ const Index = () => {
             {/* Option pills */}
             <div className="syria-pills">
               <button
-                className={`syria-pill ${trip === "roundtrip" ? "syria-pill-on" : ""}`}
-                onClick={() => setTrip("roundtrip")}
-              >
-                ذهاب وعودة
-              </button>
-              <button
                 className={`syria-pill ${trip === "oneway" ? "syria-pill-on" : ""}`}
                 onClick={() => setTrip("oneway")}
               >
                 ذهاب فقط
+              </button>
+              <button
+                className={`syria-pill ${trip === "roundtrip" ? "syria-pill-on" : ""}`}
+                onClick={() => setTrip("roundtrip")}
+              >
+                ذهاب وعودة
               </button>
               <div className="syria-pill-sep" />
               <button
