@@ -336,7 +336,7 @@ const Index = () => {
               key={a.name}
               className="syria-explore-row"
               style={{ animationDelay: `${400 + i * 80}ms` }}
-              onClick={() => navigate(`/search?type=${a.type}&airport=${a.code}`)}
+              onClick={() => navigate(`/explore/${a.code}`)}
             >
               <div className="syria-explore-avi">
                 <svg width="22" height="22" fill="none" stroke="hsl(217 91% 60%)" strokeWidth="1.5" viewBox="0 0 24 24">
