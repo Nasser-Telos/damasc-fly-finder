@@ -91,20 +91,36 @@
   margin-top: -1px;
 }
 
-/* Flying plane */
-.syria-fly-plane {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  opacity: 0;
-  animation: syria-fly 12s linear 3s infinite;
+/* Logo shimmer sweep */
+.syria-logo-mark {
+  overflow: hidden;
 }
-.syria-fly-trail {
-  opacity: 0.3;
+.syria-logo-mark::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    115deg,
+    transparent 40%,
+    hsla(0 0% 100% / 0.4) 50%,
+    transparent 60%
+  );
+  animation: syria-shimmer 5s ease-in-out infinite;
+  z-index: 1;
+}
+
+/* Sparkle dots */
+.syria-sparkle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: hsla(217 91% 60% / 0.25);
+  pointer-events: none;
+  animation: syria-twinkle 4s ease-in-out infinite;
 }
 
 @keyframes syria-logo-float {
@@ -115,12 +131,14 @@
   0%, 100% { opacity: 0; transform: scale(1); }
   50% { opacity: 1; transform: scale(1.15); }
 }
-@keyframes syria-fly {
-  0% { right: -80px; opacity: 0; }
-  5% { opacity: 0.2; }
-  90% { opacity: 0.2; }
-  95% { opacity: 0; }
-  100% { right: calc(100% + 80px); opacity: 0; }
+@keyframes syria-shimmer {
+  0%, 100% { transform: translateX(-100%) rotate(0deg); }
+  20% { transform: translateX(100%) rotate(0deg); }
+  21%, 100% { transform: translateX(-100%) rotate(0deg); }
+}
+@keyframes syria-twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.5); }
+  50% { opacity: 1; transform: scale(1); }
 }
 
 .syria-nav {
@@ -1121,5 +1139,5 @@
   
   .syria-cta { height: 48px; font-size: 15px; border-radius: 24px; margin-top: 10px; }
   .syria-logo-sub { font-size: 8px; }
-  .syria-fly-plane { display: none; }
+  .syria-sparkle { display: none; }
 }

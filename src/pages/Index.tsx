@@ -159,15 +159,10 @@ const Index = () => {
               ))}
             </nav>
           </div>
-          {/* Flying plane animation */}
-          <div className="syria-fly-plane" aria-hidden="true">
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-              <path d="M21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2L16 11l3.5-3.5C21 6 21.5 4 21 3z" fill="hsl(217 91% 60%)"/>
-            </svg>
-            <svg className="syria-fly-trail" width="60" height="2" viewBox="0 0 60 2">
-              <line x1="0" y1="1" x2="60" y2="1" stroke="hsl(217 91% 60%)" strokeWidth="1.5" strokeDasharray="4 6" strokeLinecap="round"/>
-            </svg>
-          </div>
+          {/* Sparkle dots */}
+          <div className="syria-sparkle" style={{ top: '18%', left: '75%' }} aria-hidden="true" />
+          <div className="syria-sparkle" style={{ top: '60%', left: '25%', animationDelay: '1.3s' }} aria-hidden="true" />
+          <div className="syria-sparkle" style={{ top: '40%', left: '90%', animationDelay: '2.6s' }} aria-hidden="true" />
         </header>
 
         {/* HERO ILLUSTRATION */}
