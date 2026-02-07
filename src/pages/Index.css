@@ -166,9 +166,42 @@
   position: relative;
   z-index: 1;
   max-width: 720px;
-  margin: 0 auto;
+  margin: 0 auto -20px;
   overflow: hidden;
   animation: syria-rise .7s cubic-bezier(.4,0,.2,1) .05s both;
+}
+.syria-hero-img-wrap::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    hsla(var(--background) / 0.03) 20%,
+    hsla(var(--background) / 0.15) 40%,
+    hsla(var(--background) / 0.5) 65%,
+    hsla(var(--background) / 0.85) 80%,
+    hsl(var(--background)) 100%
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+.syria-hero-img-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    hsl(var(--background)) 0%,
+    transparent 8%,
+    transparent 92%,
+    hsl(var(--background)) 100%
+  );
+  pointer-events: none;
+  z-index: 2;
 }
 .syria-hero-img {
   width: 100%;
@@ -182,7 +215,8 @@
   text-align: center;
   padding: 16px 24px 8px;
   position: relative;
-  z-index: 1;
+  z-index: 3;
+  margin-top: -40px;
 }
 .syria-h1 {
   font-size: 28px;
@@ -901,10 +935,16 @@
     max-height: 160px;
     overflow: hidden;
   }
+  .syria-hero-img-wrap::after {
+    height: 50%;
+  }
   .syria-hero-img {
     height: 160px;
     object-fit: cover;
     object-position: center 35%;
+  }
+  .syria-hero {
+    margin-top: -30px;
   }
 
   /* Header compression */
@@ -1033,6 +1073,7 @@
   /* Hero image extra compression */
   .syria-hero-img-wrap { max-height: 130px; }
   .syria-hero-img { height: 130px; object-position: center 35%; }
+  .syria-hero { margin-top: -25px; }
 
   /* Header extra compression */
   .syria-logo { height: 46px; }
