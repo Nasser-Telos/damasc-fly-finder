@@ -1,106 +1,99 @@
 
-# دمج صورة الهيرو مع خلفية الصفحة (تأثير Google Flights)
 
-## المشكلة الحالية
-الصورة التوضيحية لها حواف واضحة وحادة - تبدو كصورة مستطيلة موضوعة فوق الصفحة. في Google Flights، الصورة تذوب وتندمج بسلاسة مع الخلفية بدون أي حدود مرئية.
+# تحسين الهيدر - إزالة الطائرة المتحركة وإضافة لمسات احترافية هادئة
 
-## الحل: تدرجات شفافة على حواف الصورة
+## المشكلة
+الطائرة المتحركة العابرة مشتتة للانتباه ولا تضيف قيمة. نريد استبدالها بتأثيرات أنيقة وهادئة تعطي إحساساً بالاحترافية بدون تشتيت.
 
-### التقنية المستخدمة
-استخدام pseudo-elements (`::before` و `::after`) على `.syria-hero-img-wrap` لوضع تدرجات لونية (gradients) فوق حواف الصورة تتحول تدريجياً من شفاف إلى لون الخلفية.
+## الحل: ثلاث لمسات احترافية هادئة
 
-```text
-شكل التدرجات:
+### 1. تأثير بريق/لمعان على الشعار (Shimmer Sweep)
+خط ضوئي مائل يمر عبر أيقونة الشعار كل 5 ثوانٍ - مثل انعكاس الضوء على سطح لامع. تأثير راقي وهادئ يلفت النظر بدون مبالغة.
 
-    ┌─────────────────────────────┐
-    │▓▓▒░                     ░▒▓▓│  ← تدرج جانبي (::before)
-    │▓▒░                       ░▒▓│
-    │▒░          صورة           ░▒│
-    │░                           ░│
-    │          سوريا              │
-    │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│  ← تدرج سفلي (::after)
-    │▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒│
-    │▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│
-    └ ← يندمج مع الخلفية البيضاء ┘
-```
+### 2. نقاط متلألئة صغيرة في خلفية الهيدر (Sparkle Dots)
+3-4 نقاط صغيرة جداً (2px) بلون أزرق شفاف تتلألأ ببطء في خلفية الهيدر. تعطي إحساس "سماء ليلية" خفيف جداً بدون إزعاج.
+
+### 3. إبقاء تأثير الطفو والنبض الحاليين
+تأثيرات `syria-logo-float` و `syria-logo-pulse` الموجودة حالياً هادئة ومناسبة، نبقيها كما هي.
 
 ---
 
 ## التفاصيل التقنية
 
+### تعديل `src/pages/Index.tsx`
+
+**إزالة الطائرة المتحركة (سطور 162-170):**
+- حذف عنصر `<div className="syria-fly-plane">` بالكامل مع محتوياته
+
+**إضافة نقاط متلألئة في الهيدر:**
+- إضافة 3 عناصر `<div className="syria-sparkle">` داخل `.syria-hdr` بمواقع مختلفة عبر `style` (top/left متغيرة)
+
 ### تعديل `src/pages/Index.css`
 
-#### 1. تعديل `.syria-hero-img-wrap` الاساسي
+**إزالة:**
+- كلاس `.syria-fly-plane` وأنماطه
+- كلاس `.syria-fly-trail`
+- `@keyframes syria-fly`
 
-**اضافة `position: relative`** (موجود اصلاً) للسماح بالـ pseudo-elements.
-
-#### 2. اضافة `::after` - تدرج سفلي (الاهم)
-يذيب الحافة السفلية للصورة في الخلفية البيضاء:
+**إضافة - تأثير الشيمر على الشعار:**
 
 ```css
-.syria-hero-img-wrap::after {
+.syria-logo-mark::before {
   content: '';
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 60%;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
   background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    hsla(var(--background) / 0.03) 20%,
-    hsla(var(--background) / 0.15) 40%,
-    hsla(var(--background) / 0.5) 65%,
-    hsla(var(--background) / 0.85) 80%,
-    hsl(var(--background)) 100%
+    115deg,
+    transparent 40%,
+    hsla(0 0% 100% / 0.4) 50%,
+    transparent 60%
   );
-  pointer-events: none;
-  z-index: 2;
+  animation: syria-shimmer 5s ease-in-out infinite;
+  z-index: 1;
 }
 ```
 
-#### 3. اضافة `::before` - تدرج جانبي
-يذيب الحواف اليمنى واليسرى:
+```css
+@keyframes syria-shimmer {
+  0%, 100% { transform: translateX(-100%) rotate(0deg); }
+  20% { transform: translateX(100%) rotate(0deg); }
+  21%, 100% { transform: translateX(-100%) rotate(0deg); }
+}
+```
+
+هذا يجعل خط الضوء يمر مرة واحدة كل 5 ثوانٍ ثم ينتظر.
+
+**إضافة - النقاط المتلألئة:**
 
 ```css
-.syria-hero-img-wrap::before {
-  content: '';
+.syria-sparkle {
   position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to right,
-    hsl(var(--background)) 0%,
-    transparent 8%,
-    transparent 92%,
-    hsl(var(--background)) 100%
-  );
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: hsla(217 91% 60% / 0.25);
   pointer-events: none;
-  z-index: 2;
+  animation: syria-twinkle 4s ease-in-out infinite;
 }
 ```
-
-#### 4. تعديل `.syria-hero` (النص)
-سحب النص لاعلى قليلاً ليتداخل مع الجزء السفلي المذاب من الصورة:
 
 ```css
-.syria-hero {
-  margin-top: -40px;  /* سحب النص فوق التدرج */
-  position: relative;
-  z-index: 3;
+@keyframes syria-twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.5); }
+  50% { opacity: 1; transform: scale(1); }
 }
 ```
 
-هذا يجعل العنوان "كل شركات الطيران..." يظهر كأنه جزء من الصورة - تماماً مثل Google Flights حيث كلمة "Flights" تتداخل مع الصورة.
+كل نقطة لها `animation-delay` مختلف لتتلألأ بشكل متتابع وليس متزامن.
 
-#### 5. ازالة `overflow: hidden` من `.syria-hero-img-wrap`
-لا حاجة لها بعد الان لان التدرجات تتكفل باخفاء الحواف. بل نبقيها لكن نضيف `margin-bottom: -20px` لتقليل الفجوة.
+**إضافة `overflow: hidden` على `.syria-logo-mark`:**
+لمنع تأثير الشيمر من الظهور خارج حدود الأيقونة.
 
-#### 6. تعديلات الموبايل (480px)
-- تقليل `margin-top` السلبي للنص الى `-30px` لان الصورة اصغر
-- تقليل ارتفاع التدرج السفلي الى `50%`
-
-#### 7. تعديلات الشاشات الصغيرة (360px)
-- تقليل `margin-top` السلبي الى `-25px`
+**تعديلات responsive (360px):**
+- إخفاء النقاط المتلألئة على الشاشات الصغيرة جداً
 
 ---
 
@@ -108,14 +101,17 @@
 
 | العنصر | التغيير | السبب |
 |--------|---------|-------|
-| `.syria-hero-img-wrap::after` | تدرج سفلي جديد | اذابة الحافة السفلية |
-| `.syria-hero-img-wrap::before` | تدرج جانبي جديد | اذابة الحواف الجانبية |
-| `.syria-hero` | `margin-top: -40px` | تداخل النص مع الصورة |
-| موبايل 480px | تعديل margin-top | تناسب مع الحجم الاصغر |
-| موبايل 360px | تعديل margin-top | تناسب مع الحجم الاصغر |
+| `.syria-fly-plane` + trail + keyframe | حذف كامل | مشتت للانتباه |
+| Flying plane JSX | حذف من Index.tsx | إزالة العنصر |
+| `.syria-logo-mark::before` | شيمر جديد | لمعان أنيق على الشعار |
+| `.syria-sparkle` | كلاس جديد | نقاط متلألئة هادئة |
+| `@keyframes syria-shimmer` | جديد | حركة خط الضوء |
+| `@keyframes syria-twinkle` | جديد | تلألؤ النقاط |
 
-## ملف واحد فقط يحتاج تعديل
+## الملفات المعدلة
 
 | الملف | التغيير |
 |-------|---------|
-| `src/pages/Index.css` | اضافة pseudo-elements للتدرجات + تعديل margin النص + responsive |
+| `src/pages/Index.tsx` | إزالة الطائرة المتحركة + إضافة نقاط متلألئة |
+| `src/pages/Index.css` | إزالة أنماط الطائرة + إضافة shimmer و sparkle |
+
