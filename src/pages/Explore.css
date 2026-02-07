@@ -54,7 +54,7 @@
 
 /* ── DESTINATION PILLS ── */
 .explore-pills-wrap {
-  padding: 12px 16px;
+  padding: 14px 16px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -67,11 +67,11 @@
   min-width: max-content;
 }
 .explore-pill {
-  padding: 8px 16px;
+  padding: 10px 18px;
   border-radius: 100px;
   border: 1.5px solid hsl(220 13% 91%);
   background: hsl(0 0% 100%);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: hsl(215 16% 47%);
   cursor: pointer;
@@ -98,7 +98,7 @@
 .explore-calendar {
   max-width: 600px;
   margin: 0 auto;
-  padding: 0 16px;
+  padding: 0 12px;
 }
 
 .explore-cal-nav {
@@ -106,17 +106,17 @@
   align-items: center;
   justify-content: center;
   gap: 20px;
-  padding: 16px 0 12px;
+  padding: 16px 0 14px;
 }
 .explore-cal-month {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
-  min-width: 140px;
+  min-width: 150px;
   text-align: center;
 }
 .explore-cal-arrow {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: 1.5px solid hsl(220 13% 91%);
   background: hsl(0 0% 100%);
@@ -130,12 +130,13 @@
 .explore-cal-arrow:hover {
   border-color: hsl(217 91% 60%);
   color: hsl(217 91% 60%);
+  background: hsl(217 91% 97%);
 }
 
 .explore-cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  gap: 5px;
 }
 
 .explore-cal-header {
@@ -154,8 +155,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 52px;
-  border-radius: 10px;
+  min-height: 56px;
+  border-radius: 12px;
   border: 1.5px solid transparent;
   background: hsl(220 14% 98%);
   cursor: pointer;
@@ -165,6 +166,10 @@
 }
 .explore-cal-cell:hover {
   border-color: hsl(217 91% 80%);
+  background: hsl(217 91% 97%);
+}
+.explore-cal-cell:active {
+  transform: scale(0.95);
 }
 .explore-cal-daynum {
   font-size: 14px;
@@ -176,31 +181,38 @@
   font-size: 11px;
   font-weight: 700;
   line-height: 1.2;
-  margin-top: 1px;
+  margin-top: 2px;
 }
 
-/* Price tiers */
+/* Price tiers - improved colors */
 .explore-cal-cheap {
-  background: hsl(142 60% 94%);
+  background: hsl(142 60% 92%);
 }
 .explore-cal-cheap .explore-cal-price {
-  color: hsl(142 71% 35%);
+  color: hsl(142 71% 30%);
 }
 .explore-cal-mid {
-  background: hsl(45 80% 94%);
+  background: hsl(45 80% 92%);
 }
 .explore-cal-mid .explore-cal-price {
-  color: hsl(35 80% 40%);
+  color: hsl(35 80% 35%);
 }
 .explore-cal-expensive {
-  background: hsl(20 80% 94%);
+  background: hsl(20 80% 92%);
 }
 .explore-cal-expensive .explore-cal-price {
-  color: hsl(15 75% 45%);
+  color: hsl(15 75% 40%);
 }
 .explore-cal-empty {
   background: hsl(220 14% 98%);
   cursor: default;
+}
+.explore-cal-empty:hover {
+  border-color: transparent;
+  background: hsl(220 14% 98%);
+}
+.explore-cal-empty:active {
+  transform: none;
 }
 .explore-cal-empty .explore-cal-daynum {
   color: hsl(215 16% 72%);
@@ -209,15 +221,16 @@
 .explore-cal-selected {
   border-color: hsl(217 91% 60%) !important;
   box-shadow: 0 0 0 2px hsl(217 91% 60% / 0.2);
+  background: hsl(217 91% 95%) !important;
 }
 
 /* Legend */
 .explore-cal-legend {
   display: flex;
   justify-content: center;
-  gap: 20px;
-  margin-top: 12px;
-  padding: 8px 0 16px;
+  gap: 24px;
+  margin-top: 14px;
+  padding: 10px 0 20px;
 }
 .explore-legend-item {
   display: flex;
@@ -225,15 +238,16 @@
   gap: 6px;
   font-size: 12px;
   color: hsl(215 16% 47%);
+  font-weight: 500;
 }
 .explore-legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
 }
-.explore-legend-cheap { background: hsl(142 60% 80%); }
-.explore-legend-mid { background: hsl(45 80% 80%); }
-.explore-legend-expensive { background: hsl(20 80% 80%); }
+.explore-legend-cheap { background: hsl(142 60% 75%); }
+.explore-legend-mid { background: hsl(45 80% 75%); }
+.explore-legend-expensive { background: hsl(20 80% 75%); }
 
 /* ── FLIGHTS LIST ── */
 .explore-flights-section {
@@ -241,6 +255,22 @@
   margin: 0 auto;
   padding: 0 16px;
 }
+
+/* Fade-in animation for flights appearing */
+.explore-flights-fadein {
+  animation: explore-flights-enter 0.35s ease-out both;
+}
+@keyframes explore-flights-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .explore-flights-title {
   font-size: 16px;
   font-weight: 700;
@@ -403,20 +433,28 @@
 @media (max-width: 480px) {
   .explore-header { padding: 12px 16px; }
   .explore-title { font-size: 16px; }
-  .explore-cal-cell { min-height: 48px; }
+  .explore-calendar { padding: 0 8px; }
+  .explore-cal-cell { min-height: 52px; }
   .explore-cal-daynum { font-size: 13px; }
   .explore-cal-price { font-size: 10px; }
+  .explore-cal-arrow { width: 38px; height: 38px; }
+  .explore-cal-month { font-size: 16px; }
   .explore-fc-time { font-size: 18px; }
   .explore-fc-price { font-size: 20px; }
+  .explore-pill { padding: 8px 14px; font-size: 13px; }
 }
 
 @media (max-width: 360px) {
   .explore-header { padding: 10px 12px; }
   .explore-title { font-size: 15px; }
   .explore-back { width: 36px; height: 36px; }
-  .explore-cal-cell { min-height: 44px; border-radius: 8px; }
+  .explore-calendar { padding: 0 4px; }
+  .explore-cal-grid { gap: 3px; }
+  .explore-cal-cell { min-height: 48px; border-radius: 10px; }
   .explore-cal-daynum { font-size: 12px; }
   .explore-cal-price { font-size: 9px; }
+  .explore-cal-arrow { width: 36px; height: 36px; }
+  .explore-cal-month { font-size: 15px; }
   .explore-pills-wrap { padding: 10px 12px; }
   .explore-pill { padding: 6px 12px; font-size: 12px; }
   .explore-flight-card { padding: 12px; }

@@ -162,21 +162,22 @@ const Explore = () => {
             selectedDestination={selectedDestination}
           />
 
-          {/* Flights list */}
-          <div className="explore-flights-section">
-            <h2 className="explore-flights-title">{flightsTitle}</h2>
+          {/* Flights list - only when a day is selected */}
+          {selectedDay !== null && (
+            <div className="explore-flights-section explore-flights-fadein">
+              <h2 className="explore-flights-title">{flightsTitle}</h2>
 
-            {sortedFlights.length === 0 ? (
-              <div className="explore-no-flights">
-                لا توجد رحلات متاحة
-                {selectedDay ? " في هذا اليوم" : ""}
-              </div>
-            ) : (
-              sortedFlights.map((flight) => (
-                <ExploreFlightCard key={flight.id} flight={flight} />
-              ))
-            )}
-          </div>
+              {sortedFlights.length === 0 ? (
+                <div className="explore-no-flights">
+                  لا توجد رحلات متاحة في هذا اليوم
+                </div>
+              ) : (
+                sortedFlights.map((flight) => (
+                  <ExploreFlightCard key={flight.id} flight={flight} />
+                ))
+              )}
+            </div>
+          )}
         </>
       )}
     </div>
