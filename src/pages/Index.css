@@ -583,9 +583,8 @@
   flex-shrink: 0;
   box-shadow: 0 2px 8px hsl(217 91% 60% / .12);
 }
-.syria-explore-emoji {
-  font-size: 24px;
-  line-height: 1;
+.syria-explore-avi svg {
+  opacity: 0.85;
 }
 .syria-explore-info {
   flex: 1;
@@ -848,7 +847,7 @@
     height: 44px;
     border-radius: 14px;
   }
-  .syria-explore-emoji { font-size: 20px; }
+  
   .syria-explore-name { font-size: 14px; }
   .syria-explore-sub { font-size: 12px; }
   .syria-explore-badge { font-size: 11px; padding: 3px 8px; }
@@ -935,7 +934,7 @@
     height: 40px;
     border-radius: 12px;
   }
-  .syria-explore-emoji { font-size: 18px; }
+  
   .syria-explore-row {
     padding: 12px 14px;
     gap: 10px;
