@@ -198,6 +198,43 @@ export function useMinPricesForAirports(airportCodes: string[]) {
   });
 }
 
+// Min price for a specific route (e.g. DXB <-> DAM/ALP)
+export function useMinPriceForRoute(userAirportCode: string | null) {
+  return useQuery({
+    queryKey: ["min-price-route", userAirportCode],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("flights")
+        .select(`
+          price_usd,
+          origin:destinations!flights_origin_id_fkey(airport_code),
+          destination:destinations!flights_destination_id_fkey(airport_code)
+        `)
+        .eq("is_active", true)
+        .not("price_usd", "is", null);
+
+      if (error) throw error;
+
+      const syrianCodes = ["DAM", "ALP"];
+      const relevantFlights = (data || []).filter((f: any) => {
+        const orig = f.origin?.airport_code;
+        const dest = f.destination?.airport_code;
+        return (
+          (orig === userAirportCode && syrianCodes.includes(dest)) ||
+          (dest === userAirportCode && syrianCodes.includes(orig))
+        );
+      });
+
+      const prices = relevantFlights
+        .map((f: any) => f.price_usd)
+        .filter((p: any) => p != null && p > 0) as number[];
+
+      return prices.length > 0 ? Math.min(...prices) : null;
+    },
+    enabled: !!userAirportCode && userAirportCode !== "DAM" && userAirportCode !== "ALP",
+  });
+}
+
 // Combined flights for deals section (both to and from)
 export function useAllFlightsForAirport(airportCode: string) {
   return useQuery({

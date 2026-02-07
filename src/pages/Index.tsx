@@ -327,7 +327,12 @@ const Index = () => {
         </div>
 
         {/* EXPLORE */}
-        <ExploreDealsSection navigate={navigate} />
+        <ExploreDealsSection 
+          navigate={navigate}
+          userLocation={userLocation}
+          userCityName={userDestination?.city_ar || null}
+          isDetecting={isDetecting}
+        />
 
         <footer className="syria-ft">© {new Date().getFullYear()} رحلات سوريا · جميع الحقوق محفوظة</footer>
 

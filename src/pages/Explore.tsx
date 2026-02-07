@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { useAllFlightsForAirport } from "@/hooks/useFlights";
 import { PriceCalendar } from "@/components/flight/PriceCalendar";
@@ -26,6 +26,7 @@ function getIsoDayOfWeek(year: number, month: number, day: number): number {
 
 const Explore = () => {
   const { airportCode } = useParams<{ airportCode: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const code = (airportCode || "DAM").toUpperCase();
   const airport = AIRPORT_LABELS[code] || AIRPORT_LABELS["DAM"];
@@ -36,7 +37,9 @@ const Explore = () => {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
-  const [selectedDestination, setSelectedDestination] = useState<string | null>(null);
+  const [selectedDestination, setSelectedDestination] = useState<string | null>(
+    () => searchParams.get("dest") || null
+  );
 
   const { data: flights, isLoading } = useAllFlightsForAirport(code);
 
