@@ -904,7 +904,7 @@
   .syria-hero-img {
     height: 160px;
     object-fit: cover;
-    object-position: center bottom;
+    object-position: center 35%;
   }
 
   /* Header compression */
@@ -1032,7 +1032,7 @@
 @media (max-width: 360px) {
   /* Hero image extra compression */
   .syria-hero-img-wrap { max-height: 130px; }
-  .syria-hero-img { height: 130px; }
+  .syria-hero-img { height: 130px; object-position: center 35%; }
 
   /* Header extra compression */
   .syria-logo { height: 46px; }
