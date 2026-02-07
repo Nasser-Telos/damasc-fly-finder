@@ -1,0 +1,327 @@
+/* ============================================
+   Search Results Page
+   Same design language as Index & Explore
+   ============================================ */
+
+.search-root {
+  font-family: 'Rubik', 'Tajawal', system-ui, sans-serif;
+  min-height: 100vh;
+  background: hsl(0 0% 100%);
+  color: hsl(213 10% 20%);
+  padding-bottom: 40px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.search-root.search-on {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── HEADER ── */
+.search-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid hsl(220 13% 91%);
+  background: hsl(0 0% 100%);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.search-back {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: hsl(220 14% 96%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.search-back:hover {
+  background: hsl(220 13% 91%);
+}
+
+.search-route-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.search-route-text {
+  font-size: 17px;
+  font-weight: 700;
+  color: hsl(213 10% 20%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.search-route-arrow {
+  color: hsl(217 91% 60%);
+  font-size: 14px;
+}
+.search-count {
+  font-size: 13px;
+  color: hsl(215 16% 47%);
+  font-weight: 400;
+}
+
+/* ── FILTER PILLS ── */
+.search-filters {
+  padding: 12px 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  border-bottom: 1px solid hsl(220 13% 91%);
+}
+.search-filters::-webkit-scrollbar { display: none; }
+
+.search-filters-inner {
+  display: flex;
+  gap: 8px;
+  min-width: max-content;
+}
+
+.search-filter-pill {
+  padding: 8px 16px;
+  border-radius: 100px;
+  border: 1.5px solid hsl(220 13% 91%);
+  background: hsl(0 0% 100%);
+  font-size: 13px;
+  font-weight: 500;
+  color: hsl(215 16% 47%);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.search-filter-pill:hover {
+  border-color: hsl(217 91% 80%);
+  color: hsl(217 91% 50%);
+}
+.search-filter-pill-on {
+  background: hsl(217 91% 60%);
+  border-color: hsl(217 91% 60%);
+  color: hsl(0 0% 100%);
+}
+.search-filter-pill-on:hover {
+  background: hsl(217 91% 55%);
+  border-color: hsl(217 91% 55%);
+  color: hsl(0 0% 100%);
+}
+
+/* ── RESULTS LIST ── */
+.search-results {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+/* ── FLIGHT CARD ── */
+.search-flight-card {
+  background: hsl(0 0% 100%);
+  border: 1.5px solid hsl(220 13% 91%);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 10px;
+  transition: all 0.2s;
+}
+.search-flight-card:hover {
+  border-color: hsl(217 91% 80%);
+  box-shadow: 0 4px 16px hsl(217 91% 60% / 0.06);
+}
+
+/* Card top: airline info */
+.search-fc-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.search-fc-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: hsl(217 91% 95%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: hsl(217 91% 50%);
+  flex-shrink: 0;
+}
+.search-fc-airline-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.search-fc-airline-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: hsl(213 10% 20%);
+}
+.search-fc-flight-num {
+  font-size: 12px;
+  color: hsl(215 16% 47%);
+}
+
+/* Card middle: route */
+.search-fc-route {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.search-fc-point {
+  flex: 1;
+  text-align: center;
+}
+.search-fc-time {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: hsl(213 10% 20%);
+}
+.search-fc-city {
+  display: block;
+  font-size: 12px;
+  color: hsl(215 16% 47%);
+  margin-top: 2px;
+}
+.search-fc-code {
+  display: block;
+  font-size: 11px;
+  color: hsl(215 16% 62%);
+}
+
+.search-fc-middle {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.search-fc-duration {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: hsl(215 16% 47%);
+}
+.search-fc-line {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.search-fc-line-bar {
+  flex: 1;
+  height: 1px;
+  background: hsl(220 13% 85%);
+}
+.search-fc-stops {
+  font-size: 11px;
+  color: hsl(217 91% 50%);
+  font-weight: 600;
+}
+
+/* Card bottom: price + book */
+.search-fc-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid hsl(220 14% 96%);
+}
+.search-fc-price {
+  font-size: 22px;
+  font-weight: 700;
+  color: hsl(217 91% 50%);
+}
+.search-fc-price-label {
+  font-size: 11px;
+  color: hsl(215 16% 55%);
+  font-weight: 400;
+  margin-right: 4px;
+}
+.search-fc-book {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 100px;
+  background: hsl(217 91% 60%);
+  color: hsl(0 0% 100%);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+.search-fc-book:hover {
+  background: hsl(217 91% 55%);
+}
+
+/* ── NO FLIGHTS ── */
+.search-no-flights {
+  text-align: center;
+  padding: 48px 16px;
+  color: hsl(215 16% 55%);
+  font-size: 15px;
+}
+.search-no-flights-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+.search-no-flights-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: hsl(213 10% 30%);
+  margin-bottom: 6px;
+}
+
+/* ── LOADING ── */
+.search-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 60px 20px;
+  color: hsl(215 16% 47%);
+  font-size: 15px;
+}
+
+/* ── MOBILE ── */
+@media (max-width: 480px) {
+  .search-header { padding: 12px 16px; }
+  .search-route-text { font-size: 15px; }
+  .search-count { font-size: 12px; }
+  .search-fc-time { font-size: 20px; }
+  .search-fc-price { font-size: 20px; }
+  .search-results { padding: 12px; }
+}
+
+@media (max-width: 360px) {
+  .search-header { padding: 10px 12px; }
+  .search-back { width: 36px; height: 36px; }
+  .search-route-text { font-size: 14px; }
+  .search-filters { padding: 10px 12px; }
+  .search-filter-pill { padding: 6px 12px; font-size: 12px; }
+  .search-flight-card { padding: 12px; }
+  .search-fc-time { font-size: 18px; }
+  .search-fc-price { font-size: 18px; }
+  .search-fc-book { padding: 7px 14px; font-size: 12px; }
+}

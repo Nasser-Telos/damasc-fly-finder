@@ -1,70 +1,152 @@
-import { useSearchParams } from "react-router-dom";
-import { useState, useMemo } from "react";
-import { Filter, SortAsc, Plane, Loader2 } from "lucide-react";
-import { Layout } from "@/components/layout/Layout";
-import { FlightCard } from "@/components/flight/FlightCard";
-import { FlightSearchForm } from "@/components/flight/FlightSearchForm";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { useDamascusFlights, useAirlines } from "@/hooks/useFlights";
-import type { FlightFilters } from "@/types/flight";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { ArrowRight, Loader2, Plane, Clock, ExternalLink } from "lucide-react";
+import { useDamascusFlights, useAleppoFlights } from "@/hooks/useFlights";
+import type { Flight } from "@/types/flight";
+import "./Search.css";
+
+type SortBy = "price" | "duration" | "departure";
+
+const AIRPORT_LABELS: Record<string, string> = {
+  DAM: "دمشق",
+  ALP: "حلب",
+};
+
+function formatTime(time: string) {
+  return time.slice(0, 5);
+}
+
+function formatDuration(minutes: number) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h}س ${m}د`;
+}
+
+function formatPrice(price: number | null) {
+  if (!price) return "اتصل للسعر";
+  return `$${price.toLocaleString()}`;
+}
+
+function SearchFlightCard({ flight }: { flight: Flight }) {
+  return (
+    <div className="search-flight-card">
+      {/* Airline */}
+      <div className="search-fc-top">
+        <div className="search-fc-logo">
+          {flight.airline?.code}
+        </div>
+        <div className="search-fc-airline-info">
+          <span className="search-fc-airline-name">{flight.airline?.name_ar}</span>
+          <span className="search-fc-flight-num">{flight.flight_number}</span>
+        </div>
+      </div>
+
+      {/* Route */}
+      <div className="search-fc-route">
+        <div className="search-fc-point">
+          <span className="search-fc-time">{formatTime(flight.departure_time)}</span>
+          <span className="search-fc-city">{flight.origin?.city_ar}</span>
+          <span className="search-fc-code">{flight.origin?.airport_code}</span>
+        </div>
+
+        <div className="search-fc-middle">
+          <span className="search-fc-duration">
+            <Clock className="h-3 w-3" />
+            {formatDuration(flight.duration_minutes)}
+          </span>
+          <div className="search-fc-line">
+            <div className="search-fc-line-bar" />
+            <Plane className="h-3.5 w-3.5 -rotate-90" style={{ color: "hsl(217 91% 60%)", margin: "0 4px" }} />
+            <div className="search-fc-line-bar" />
+          </div>
+          <span className="search-fc-stops">
+            {flight.stops === 0 ? "مباشرة" : `${flight.stops} توقف`}
+          </span>
+        </div>
+
+        <div className="search-fc-point">
+          <span className="search-fc-time">{formatTime(flight.arrival_time)}</span>
+          <span className="search-fc-city">{flight.destination?.city_ar}</span>
+          <span className="search-fc-code">{flight.destination?.airport_code}</span>
+        </div>
+      </div>
+
+      {/* Price & Book */}
+      <div className="search-fc-bottom">
+        <div>
+          <span className="search-fc-price">{formatPrice(flight.price_usd)}</span>
+          <span className="search-fc-price-label">للشخص</span>
+        </div>
+        {flight.airline?.website_url && (
+          <a
+            href={flight.airline.website_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="search-fc-book"
+          >
+            احجز
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function SearchPage() {
   const [searchParams] = useSearchParams();
-  const tripType = searchParams.get("type") as "from_damascus" | "to_damascus" || "to_damascus";
+  const navigate = useNavigate();
+  const [ready, setReady] = useState(false);
+
+  const tripType = searchParams.get("type") || "to_damascus";
+  const airportParam = searchParams.get("airport") || "DAM";
   const destinationCode = searchParams.get("destination") || undefined;
+  const airport = airportParam.toUpperCase();
 
-  const type = tripType === "from_damascus" ? "from" : "to";
-  const { data: flights, isLoading } = useDamascusFlights(type, destinationCode === "all" ? undefined : destinationCode);
-  const { data: airlines } = useAirlines();
+  const isAleppo = airport === "ALP";
+  const isDamascus = !isAleppo;
 
-  const [filters, setFilters] = useState<FlightFilters>({
-    airlines: [],
-    maxPrice: null,
-    directOnly: false,
-    sortBy: "price",
-  });
+  // Determine direction
+  const isFromLocal = tripType.startsWith("from_");
+  const type: "from" | "to" = isFromLocal ? "from" : "to";
+  const destFilter = destinationCode === "all" ? undefined : destinationCode;
 
-  // Filter and sort flights
+  // Use the correct hook based on airport
+  const damascusResult = useDamascusFlights(type, destFilter);
+  const aleppoResult = useAleppoFlights(type, destFilter);
+
+  const { data: flights, isLoading } = isAleppo ? aleppoResult : damascusResult;
+
+  const [sortBy, setSortBy] = useState<SortBy>("price");
+  const [directOnly, setDirectOnly] = useState(false);
+
+  useEffect(() => {
+    requestAnimationFrame(() => setReady(true));
+  }, []);
+
+  // Build route label
+  const localCity = AIRPORT_LABELS[airport] || "دمشق";
+  const destCity = useMemo(() => {
+    if (!flights || flights.length === 0) return "";
+    if (isFromLocal) {
+      const dest = flights[0]?.destination?.city_ar;
+      return dest || "";
+    }
+    const origin = flights[0]?.origin?.city_ar;
+    return origin || "";
+  }, [flights, isFromLocal]);
+
+  // Filter and sort
   const filteredFlights = useMemo(() => {
     if (!flights) return [];
-
     let result = [...flights];
 
-    // Filter by airlines
-    if (filters.airlines.length > 0) {
-      result = result.filter(f => f.airline && filters.airlines.includes(f.airline.code));
+    if (directOnly) {
+      result = result.filter((f) => f.stops === 0);
     }
 
-    // Filter direct only
-    if (filters.directOnly) {
-      result = result.filter(f => f.stops === 0);
-    }
-
-    // Filter by max price
-    if (filters.maxPrice) {
-      result = result.filter(f => f.price_usd && f.price_usd <= filters.maxPrice!);
-    }
-
-    // Sort
     result.sort((a, b) => {
-      switch (filters.sortBy) {
+      switch (sortBy) {
         case "price":
           return (a.price_usd || 9999) - (b.price_usd || 9999);
         case "duration":
@@ -77,180 +159,78 @@ export default function SearchPage() {
     });
 
     return result;
-  }, [flights, filters]);
+  }, [flights, sortBy, directOnly]);
 
-  const toggleAirlineFilter = (code: string) => {
-    setFilters(prev => ({
-      ...prev,
-      airlines: prev.airlines.includes(code)
-        ? prev.airlines.filter(c => c !== code)
-        : [...prev.airlines, code],
-    }));
-  };
-
-  const FiltersContent = () => (
-    <div className="space-y-6">
-      {/* Sort */}
-      <div>
-        <Label className="text-sm font-medium mb-2 block">ترتيب حسب</Label>
-        <Select
-          value={filters.sortBy}
-          onValueChange={(value: "price" | "duration" | "departure") =>
-            setFilters(prev => ({ ...prev, sortBy: value }))
-          }
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="price">السعر (الأقل أولاً)</SelectItem>
-            <SelectItem value="duration">المدة (الأقصر أولاً)</SelectItem>
-            <SelectItem value="departure">وقت المغادرة</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Direct Only */}
-      <div className="flex items-center gap-3">
-        <Checkbox
-          id="directOnly"
-          checked={filters.directOnly}
-          onCheckedChange={(checked) =>
-            setFilters(prev => ({ ...prev, directOnly: !!checked }))
-          }
-        />
-        <Label htmlFor="directOnly" className="cursor-pointer">
-          رحلات مباشرة فقط
-        </Label>
-      </div>
-
-      {/* Airlines Filter */}
-      <div>
-        <Label className="text-sm font-medium mb-3 block">شركات الطيران</Label>
-        <div className="space-y-2">
-          {airlines?.map((airline) => (
-            <div key={airline.id} className="flex items-center gap-3">
-              <Checkbox
-                id={`airline-${airline.code}`}
-                checked={filters.airlines.includes(airline.code)}
-                onCheckedChange={() => toggleAirlineFilter(airline.code)}
-              />
-              <Label
-                htmlFor={`airline-${airline.code}`}
-                className="cursor-pointer text-sm"
-              >
-                {airline.name_ar}
-              </Label>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Clear Filters */}
-      <Button
-        variant="outline"
-        className="w-full"
-        onClick={() =>
-          setFilters({
-            airlines: [],
-            maxPrice: null,
-            directOnly: false,
-            sortBy: "price",
-          })
-        }
-      >
-        مسح الفلاتر
-      </Button>
-    </div>
-  );
+  const routeLabel = isFromLocal
+    ? `${localCity} ← ${destCity || "جميع الوجهات"}`
+    : `${destCity || "جميع الوجهات"} ← ${localCity}`;
 
   return (
-    <Layout>
+    <div dir="rtl" className={`search-root ${ready ? "search-on" : ""}`}>
       {/* Header */}
-      <section className="bg-gradient-to-br from-navy-dark to-primary py-8">
-        <div className="container">
-          <div className="max-w-4xl mx-auto">
-            <FlightSearchForm />
-          </div>
+      <header className="search-header">
+        <button className="search-back" onClick={() => navigate(-1)}>
+          <ArrowRight className="h-5 w-5" />
+        </button>
+        <div className="search-route-info">
+          <span className="search-route-text">
+            {routeLabel}
+          </span>
+          <span className="search-count">
+            {isLoading ? "جاري البحث..." : `${filteredFlights.length} رحلة متاحة`}
+          </span>
         </div>
-      </section>
+      </header>
+
+      {/* Filter Pills */}
+      <div className="search-filters">
+        <div className="search-filters-inner">
+          <button
+            className={`search-filter-pill ${sortBy === "price" && !directOnly ? "search-filter-pill-on" : ""}`}
+            onClick={() => { setSortBy("price"); setDirectOnly(false); }}
+          >
+            الأرخص
+          </button>
+          <button
+            className={`search-filter-pill ${sortBy === "duration" ? "search-filter-pill-on" : ""}`}
+            onClick={() => setSortBy("duration")}
+          >
+            الأقصر
+          </button>
+          <button
+            className={`search-filter-pill ${sortBy === "departure" ? "search-filter-pill-on" : ""}`}
+            onClick={() => setSortBy("departure")}
+          >
+            وقت المغادرة
+          </button>
+          <button
+            className={`search-filter-pill ${directOnly ? "search-filter-pill-on" : ""}`}
+            onClick={() => setDirectOnly(!directOnly)}
+          >
+            مباشرة فقط
+          </button>
+        </div>
+      </div>
 
       {/* Results */}
-      <section className="py-8">
-        <div className="container">
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Desktop Filters */}
-            <aside className="hidden lg:block w-72 flex-shrink-0">
-              <Card className="sticky top-24">
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-                    <Filter className="h-5 w-5" />
-                    الفلاتر
-                  </h3>
-                  <FiltersContent />
-                </CardContent>
-              </Card>
-            </aside>
-
-            {/* Results List */}
-            <div className="flex-1">
-              {/* Results Header */}
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h1 className="text-2xl font-bold mb-1">
-                    {tripType === "to_damascus" ? "رحلات إلى دمشق" : "رحلات من دمشق"}
-                  </h1>
-                  <p className="text-muted-foreground">
-                    {isLoading ? "جاري البحث..." : `${filteredFlights.length} رحلة متاحة`}
-                  </p>
-                </div>
-
-                {/* Mobile Filters */}
-                <Sheet>
-                  <SheetTrigger asChild>
-                    <Button variant="outline" className="lg:hidden gap-2">
-                      <Filter className="h-4 w-4" />
-                      الفلاتر
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="right" className="w-80">
-                    <SheetHeader>
-                      <SheetTitle>الفلاتر</SheetTitle>
-                    </SheetHeader>
-                    <div className="mt-6">
-                      <FiltersContent />
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              </div>
-
-              {/* Loading State */}
-              {isLoading ? (
-                <div className="flex flex-col items-center justify-center py-20">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-                  <p className="text-muted-foreground">جاري البحث عن الرحلات...</p>
-                </div>
-              ) : filteredFlights.length === 0 ? (
-                <Card>
-                  <CardContent className="py-20 text-center">
-                    <Plane className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold mb-2">لا توجد رحلات</h3>
-                    <p className="text-muted-foreground">
-                      جرب تغيير معايير البحث أو اختر وجهة مختلفة
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {filteredFlights.map((flight) => (
-                    <FlightCard key={flight.id} flight={flight} />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+      {isLoading ? (
+        <div className="search-loading">
+          <Loader2 className="h-6 w-6 animate-spin" style={{ color: "hsl(217 91% 60%)" }} />
+          <span>جاري البحث عن الرحلات...</span>
         </div>
-      </section>
-    </Layout>
+      ) : filteredFlights.length === 0 ? (
+        <div className="search-no-flights">
+          <div className="search-no-flights-icon">✈️</div>
+          <div className="search-no-flights-title">لا توجد رحلات</div>
+          <p>جرب تغيير الفلتر أو العودة واختيار وجهة مختلفة</p>
+        </div>
+      ) : (
+        <div className="search-results">
+          {filteredFlights.map((flight) => (
+            <SearchFlightCard key={flight.id} flight={flight} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
