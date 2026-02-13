@@ -174,7 +174,7 @@ const Explore = () => {
               className={`explore-airport-btn ${code === key ? "explore-airport-on" : ""}`}
               onClick={() => handleAirportSwitch(key)}
             >
-              {val.name}
+              إلى {val.name}
               <span className="explore-airport-code">{key}</span>
             </button>
           ))}
