@@ -180,180 +180,13 @@
   overflow: hidden;
 }
 
-/* Pills */
-.syria-pills {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: nowrap;
-  padding: 12px 16px;
-  border-bottom: 1px solid hsl(var(--border));
-  position: relative;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  justify-content: flex-start;
-}
-.syria-pills::-webkit-scrollbar { display: none; }
-
-/* Pills (all types) */
-.syria-pill {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 34px;
-  padding: 0 16px;
-  border-radius: 17px;
-  font-size: 13px;
-  font-weight: 500;
-  color: hsl(var(--muted-foreground));
-  background: transparent;
-  border: 1px solid hsl(var(--border));
-  transition: all .15s;
-  cursor: pointer;
-  font-family: inherit;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.syria-pill:hover {
-  background: hsl(var(--accent));
-  color: hsl(var(--foreground));
-  border-color: hsl(var(--accent));
-}
-
-/* Trip type pills (same size as other pills) */
-.syria-pill.syria-pill-trip {
-  background: hsl(var(--secondary));
-  border: 1px solid transparent;
-}
-.syria-pill.syria-pill-trip:hover {
-  background: hsl(var(--accent));
-  border-color: transparent;
-}
-
-/* Active pill */
-.syria-pill.syria-pill-on {
-  background: hsl(217 91% 97%);
-  color: hsl(217 91% 45%);
-  border-color: hsl(217 91% 85%);
-  font-weight: 500;
-}
-
-/* Separator */
-.syria-pill-sep {
-  width: 1px;
-  height: 20px;
-  background: hsl(var(--border));
-  margin: 0 4px;
-  flex-shrink: 0;
-}
-
-/* Bottom-sheet pickers */
-.syria-pop {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  background: hsl(var(--background));
-  border-radius: 24px 24px 0 0;
-  box-shadow: 0 -4px 32px rgba(0,0,0,.12);
-  animation: syria-sheetup .35s cubic-bezier(.22,1,.36,1);
-}
-.syria-pop-pax {
-  padding: 8px 24px calc(36px + env(safe-area-inset-bottom, 0px));
-}
-.syria-pop-cabin {
-  padding: 8px 8px calc(32px + env(safe-area-inset-bottom, 0px));
-}
+/* Pop title (used by date picker) */
 .syria-pop-title {
   font-size: 16px;
   font-weight: 600;
   display: block;
   margin-bottom: 20px;
   text-align: center;
-}
-.syria-stepper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
-}
-.syria-step-btn {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: none;
-  background: hsl(var(--secondary));
-  font-size: 24px;
-  color: hsl(var(--foreground));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all .2s;
-  cursor: pointer;
-  font-family: inherit;
-}
-.syria-step-btn:hover:not(:disabled) {
-  background: hsl(var(--accent));
-}
-.syria-step-btn:disabled {
-  opacity: .35;
-  cursor: default;
-}
-.syria-step-val {
-  font-size: 36px;
-  font-weight: 600;
-  min-width: 48px;
-  text-align: center;
-  color: hsl(var(--foreground));
-}
-.syria-step-label {
-  font-size: 13px;
-  color: hsl(var(--muted-foreground));
-  text-align: center;
-  margin-top: 4px;
-  display: block;
-}
-.syria-pop-done {
-  display: block;
-  width: 100%;
-  height: 44px;
-  border-radius: 22px;
-  margin-top: 24px;
-  background: hsl(var(--primary));
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
-  transition: background .15s;
-  cursor: pointer;
-  border: none;
-  font-family: inherit;
-}
-.syria-pop-done:hover {
-  background: hsl(217 91% 50%);
-}
-.syria-pop-opt {
-  display: block;
-  width: 100%;
-  text-align: center;
-  padding: 16px 20px;
-  border-radius: 14px;
-  font-size: 15px;
-  color: hsl(var(--foreground));
-  transition: background .1s;
-  cursor: pointer;
-  border: none;
-  background: none;
-  font-family: inherit;
-}
-.syria-pop-opt:hover {
-  background: hsl(var(--secondary));
-}
-.syria-pop-opt.syria-pop-sel {
-  background: hsl(217 91% 92%);
-  color: hsl(var(--primary));
-  font-weight: 600;
 }
 
 /* ═══ FORM ═══ */
@@ -365,9 +198,14 @@
 .syria-route-box {
   border: 1px solid hsl(var(--border));
   border-radius: 12px;
-  overflow: hidden;
   position: relative;
   transition: border-color .3s;
+}
+.syria-route-box > :first-child {
+  border-radius: 12px 12px 0 0;
+}
+.syria-route-box > :last-child {
+  border-radius: 0 0 12px 12px;
 }
 
 .syria-inp {
@@ -382,6 +220,8 @@
   font-family: inherit;
   cursor: pointer;
   border: none;
+  position: relative;
+  z-index: 1;
 }
 .syria-inp:hover {
   background: hsl(var(--secondary));
@@ -820,6 +660,42 @@
   letter-spacing: 2px;
 }
 
+/* ═══ COUNTRY HEADER (city picker) ═══ */
+.syria-sh-country-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: hsla(var(--background) / .92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid hsl(var(--border));
+}
+.syria-sh-country-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 100px;
+  background: hsl(217 91% 95%);
+  color: hsl(217 91% 45%);
+  font-size: 13px;
+  font-weight: 600;
+}
+.syria-sh-country-count {
+  font-size: 12px;
+  color: hsl(var(--muted-foreground));
+  font-weight: 500;
+}
+.syria-sh-row.syria-sh-country-match {
+  background: hsl(217 91% 97%);
+}
+.syria-sh-row.syria-sh-country-match:hover {
+  background: hsl(217 91% 94%);
+}
+
 /* ═══ LOADING ═══ */
 .syria-loading {
   display: flex;
@@ -924,31 +800,7 @@
 
 /* ═══ RESPONSIVE ═══ */
 
-/* Overlay for bottom-sheet pickers */
-.syria-pop-overlay {
-  display: block;
-  position: fixed;
-  inset: 0;
-  z-index: 999;
-  background: rgba(15, 23, 42, 0.3);
-  backdrop-filter: blur(4px);
-  animation: syria-fadein 0.2s;
-}
-
 @media (max-width: 480px) {
-  /* Hero image compression */
-  .syria-hero-img-wrap {
-    max-height: 120px;
-    overflow: hidden;
-  }
-  .syria-hero-img-wrap::after {
-    height: 50%;
-  }
-  .syria-hero-img {
-    height: 120px;
-    object-fit: cover;
-    object-position: center 35%;
-  }
   .syria-hero {
     margin-top: 0;
   }
@@ -970,28 +822,6 @@
   .syria-date-boxes { gap: 8px; margin-top: 8px; }
   .syria-cta { height: 46px; font-size: 15px; margin-top: 12px; }
   .syria-card { border-radius: 14px; }
-
-  /* Pills - fit all in one row */
-  .syria-pills {
-    gap: 4px;
-    padding: 8px 8px;
-  }
-  .syria-pill {
-    height: 32px;
-    padding: 0 8px;
-    font-size: 11px;
-    border-radius: 16px;
-    gap: 3px;
-    white-space: nowrap;
-  }
-  .syria-pill-sep {
-    margin: 0 1px;
-    height: 14px;
-  }
-  .syria-pill svg {
-    width: 12px;
-    height: 12px;
-  }
 
   /* Input values */
   .syria-inp-value {
@@ -1049,11 +879,6 @@
 
 /* Extra small phones */
 @media (max-width: 360px) {
-  /* Hero image extra compression */
-  .syria-hero-img-wrap { max-height: 100px; }
-  .syria-hero-img { height: 100px; object-position: center 35%; }
-  .syria-hero { margin-top: 0; }
-
   /* Header extra compression */
   .syria-logo { height: 46px; }
   .syria-nav-btn { padding: 10px 0; font-size: 12px; }
@@ -1062,22 +887,6 @@
   .syria-hero-sub { font-size: 13px; }
   .syria-hero { padding: 4px 12px 2px; }
   .syria-card-area { margin: 8px auto 0; padding: 0 10px; }
-
-  .syria-pill {
-    height: 32px;
-    padding: 0 10px;
-    font-size: 12px;
-    border-radius: 16px;
-    gap: 3px;
-  }
-  .syria-pills {
-    gap: 4px;
-    padding: 8px 12px;
-  }
-  .syria-pill-sep {
-    margin: 0 2px;
-    height: 14px;
-  }
 
   .syria-inp { padding: 8px 12px; }
   .syria-date-inp { padding: 8px 12px; }

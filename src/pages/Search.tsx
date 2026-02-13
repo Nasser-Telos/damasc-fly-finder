@@ -1,8 +1,10 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useState, useMemo, useEffect } from "react";
-import { ArrowRight, ArrowLeft, Loader2, Plane, Clock, ExternalLink, ChevronUp } from "lucide-react";
+import { ArrowRight, ArrowLeft, Plane, Clock, ExternalLink, ChevronUp } from "lucide-react";
 import { useDamascusFlights, useAleppoFlights } from "@/hooks/useFlights";
 import type { Flight } from "@/types/flight";
+import { formatTime, formatDuration, formatPrice } from "@/lib/formatters";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import "./Search.css";
 
 type SortBy = "price" | "duration" | "departure";
@@ -11,21 +13,6 @@ const AIRPORT_LABELS: Record<string, string> = {
   DAM: "دمشق",
   ALP: "حلب",
 };
-
-function formatTime(time: string) {
-  return time.slice(0, 5);
-}
-
-function formatDuration(minutes: number) {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return `${h}س ${m}د`;
-}
-
-function formatPrice(price: number | null) {
-  if (!price) return "اتصل للسعر";
-  return `$${price.toLocaleString()}`;
-}
 
 function SearchFlightCard({ flight, isCheapest, index = 0 }: { flight: Flight; isCheapest?: boolean; index?: number }) {
   return (
@@ -175,6 +162,7 @@ export default function SearchPage() {
   }, [flights, sortBy, directOnly]);
 
   return (
+    <>
     <div dir="rtl" className={`search-root ${ready ? "search-on" : ""}`}>
       {/* Header */}
       <header className="search-header">
@@ -239,8 +227,7 @@ export default function SearchPage() {
       {/* Results */}
       {isLoading ? (
         <div className="search-loading">
-          <Loader2 className="h-6 w-6 animate-spin" style={{ color: "hsl(217 91% 60%)" }} />
-          <span>جاري البحث عن الرحلات...</span>
+          <LoadingSpinner text="جاري البحث عن الرحلات..." size="lg" />
         </div>
       ) : filteredFlights.length === 0 ? (
         <div className="search-no-flights">
@@ -261,5 +248,6 @@ export default function SearchPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

@@ -1,18 +1,12 @@
 import { Plane, Clock, ExternalLink } from "lucide-react";
 import type { Flight } from "@/types/flight";
+import { formatTime, formatDuration, formatPrice } from "@/lib/formatters";
 
 interface ExploreFlightCardProps {
   flight: Flight;
 }
 
 export function ExploreFlightCard({ flight }: ExploreFlightCardProps) {
-  const formatTime = (time: string) => time.slice(0, 5);
-
-  const formatDuration = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}س ${mins}د`;
-  };
 
   return (
     <div className="explore-flight-card">
@@ -60,7 +54,7 @@ export function ExploreFlightCard({ flight }: ExploreFlightCardProps) {
       {/* Price & Action */}
       <div className="explore-fc-bottom">
         <div className="explore-fc-price">
-          {flight.price_usd ? `$${flight.price_usd}` : "اتصل للسعر"}
+          {formatPrice(flight.price_usd)}
         </div>
         {flight.airline?.website_url && (
           <a

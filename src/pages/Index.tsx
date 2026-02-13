@@ -1,47 +1,33 @@
-import { useState, useEffect, useMemo, useRef } from "react";
-import { createPortal } from "react-dom";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plane, Loader2 } from "lucide-react";
 import { useDestinations } from "@/hooks/useFlights";
 import { ExploreDealsSection } from "@/components/flight/ExploreDealsSection";
+
 import type { Destination } from "@/types/flight";
+import { filterDestinations } from "@/lib/destinationFilter";
+import { countryGeoMapping, DEFAULT_GEO } from "@/lib/geoMapping";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import syriaHeroImage from "@/assets/syria-hero-illustration.webp";
 import "./Index.css";
-
-// Map countries to their likely airport codes
-const countryToAirport: Record<string, string> = {
-  'AE': 'DXB', 'QA': 'DOH', 'SA': 'JED', 'KW': 'KWI', 'BH': 'BAH',
-  'OM': 'MCT', 'JO': 'AMM', 'LB': 'BEY', 'EG': 'CAI', 'TR': 'IST',
-  'IQ': 'BGW', 'RU': 'SVO',
-};
-
-const cMap: Record<string, string> = {
-  economy: "الدرجة الاقتصادية",
-  premium: "اقتصادي ممتاز",
-  business: "درجة الأعمال",
-  first: "الدرجة الأولى",
-};
 
 type AirportTab = 'dam' | 'alp';
 
 const Index = () => {
   const navigate = useNavigate();
   const [userLocation, setUserLocation] = useState<string | null>(null);
+  const [userCityNameDirect, setUserCityNameDirect] = useState<string | null>(null);
   const [isDetecting, setIsDetecting] = useState(true);
   const [dir, setDir] = useState<'to' | 'from'>('to');
   const [picker, setPicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [pax, setPax] = useState(1);
-  const [trip, setTrip] = useState<'roundtrip' | 'oneway'>('oneway');
-  const [cabin, setCabin] = useState<string>('economy');
   const [menu, setMenu] = useState<string | null>(null);
+  const [airportPicker, setAirportPicker] = useState(false);
   const [tab, setTab] = useState<AirportTab>('dam');
   const [q, setQ] = useState('');
   const [ready, setReady] = useState(false);
   const [calMonth, setCalMonth] = useState(() => new Date());
-  const [returnDate, setReturnDate] = useState<Date | null>(null);
 
   const { data: destinations } = useDestinations();
 
@@ -51,42 +37,58 @@ const Index = () => {
   }, [destinations]);
 
   // Filtered destinations for search
-  const filteredDestinations = useMemo(() => {
-    if (!q) return otherDestinations;
-    const lower = q.toLowerCase();
-    return otherDestinations.filter(d =>
-      d.city_ar.includes(q) ||
-      d.city.toLowerCase().includes(lower) ||
-      d.airport_code.toLowerCase().includes(lower) ||
-      d.country_ar.includes(q)
-    );
+  const filterResult = useMemo(() => {
+    return filterDestinations(otherDestinations, q);
   }, [otherDestinations, q]);
 
   // Detect user location
   useEffect(() => {
     const controller = new AbortController();
+
+    const applyCountry = (countryCode: string | null) => {
+      if (countryCode === 'SY') {
+        setUserLocation(DEFAULT_GEO.airportCode);
+        setUserCityNameDirect(DEFAULT_GEO.cityNameAr);
+        setDir('from');
+      } else if (countryCode && countryGeoMapping[countryCode]) {
+        const geo = countryGeoMapping[countryCode];
+        setUserLocation(geo.airportCode);
+        setUserCityNameDirect(geo.cityNameAr);
+      } else {
+        setUserLocation(DEFAULT_GEO.airportCode);
+        setUserCityNameDirect(DEFAULT_GEO.cityNameAr);
+      }
+    };
+
     const detectLocation = async () => {
       try {
-        const response = await fetch('https://ipapi.co/json/', { 
+        // Primary: Cloudflare Pages Function (production)
+        const res = await fetch('/api/geo', {
           signal: controller.signal,
-          cache: 'force-cache'
+          cache: 'no-store',
         });
-        if (!response.ok) throw new Error('Network error');
-        const data = await response.json();
-        if (data.country_code === 'SY') {
-          setUserLocation('DXB');
-          setDir('from');
-        } else if (data.country_code && countryToAirport[data.country_code]) {
-          setUserLocation(countryToAirport[data.country_code]);
-        } else {
-          setUserLocation('DXB');
-        }
+        if (!res.ok) throw new Error('geo endpoint failed');
+        const data = await res.json();
+        applyCountry(data.country_code);
       } catch {
-        setUserLocation('DXB');
+        try {
+          // Fallback: ipwho.is (works during local dev)
+          const res = await fetch('https://ipwho.is/', {
+            signal: controller.signal,
+            cache: 'no-store',
+          });
+          if (!res.ok) throw new Error('ipwho.is failed');
+          const data = await res.json();
+          applyCountry(data.country_code);
+        } catch {
+          // Final fallback
+          applyCountry(null);
+        }
       } finally {
         setIsDetecting(false);
       }
     };
+
     detectLocation();
     return () => controller.abort();
   }, []);
@@ -95,6 +97,26 @@ const Index = () => {
   useEffect(() => {
     requestAnimationFrame(() => setReady(true));
   }, []);
+
+  // Escape key closes modals
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (picker) { setPicker(false); setQ(''); }
+        else if (airportPicker) { setAirportPicker(false); }
+        else if (menu) { setMenu(null); }
+      }
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [picker, airportPicker, menu]);
+
+  // Lock body scroll when modals are open
+  useEffect(() => {
+    const isOpen = picker || airportPicker || menu === "depart";
+    document.body.style.overflow = isOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [picker, airportPicker, menu]);
 
   const userDestination = useMemo(() => {
     return destinations?.find(d => d.airport_code === userLocation);
@@ -122,22 +144,18 @@ const Index = () => {
 
   const airportName = tab === 'dam' ? 'دمشق' : 'حلب';
   const airportCode = tab === 'dam' ? 'DAM' : 'ALP';
-  const city = userDestination?.city_ar || (isDetecting ? 'جاري التحديد...' : 'اختر مدينة');
+  const city = userCityNameDirect || userDestination?.city_ar || (isDetecting ? 'جاري التحديد...' : 'اختر مدينة');
   const cc = userLocation || '';
 
   const handleSelectCity = (dest: Destination) => {
     setUserLocation(dest.airport_code);
+    setUserCityNameDirect(dest.city_ar);
     setPicker(false);
     setQ('');
   };
 
   const handleDateSelect = (date: Date) => {
-    if (menu === "depart") {
-      setSelectedDate(date);
-      if (returnDate && date > returnDate) setReturnDate(null);
-    } else {
-      setReturnDate(date);
-    }
+    setSelectedDate(date);
     setMenu(null);
   };
 
@@ -148,7 +166,6 @@ const Index = () => {
     params.set("airport", airportCode);
     if (userLocation) params.set("destination", userLocation);
     if (selectedDate) params.set("date", selectedDate.toISOString());
-    params.set("passengers", pax.toString());
     navigate(`/search?${params.toString()}`);
   };
 
@@ -201,84 +218,12 @@ const Index = () => {
         <div className="syria-card-area" onClick={e => e.stopPropagation()}>
           <div className="syria-card">
 
-            {/* Option pills */}
-            <div className="syria-pills">
-              <button
-                className={`syria-pill syria-pill-trip ${trip === "oneway" ? "syria-pill-on" : ""}`}
-                onClick={() => setTrip("oneway")}
-              >
-                ذهاب فقط
-              </button>
-              <button
-                className={`syria-pill syria-pill-trip ${trip === "roundtrip" ? "syria-pill-on" : ""}`}
-                onClick={() => setTrip("roundtrip")}
-              >
-                ذهاب وعودة
-              </button>
-              <div className="syria-pill-sep" />
-              <button
-                className="syria-pill"
-                onClick={e => { e.stopPropagation(); setMenu(menu === "pax" ? null : "pax"); }}
-              >
-                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                  <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                </svg>
-                {pax}
-              </button>
-              {menu === "pax" && createPortal(
-                <>
-                  <div className="syria-pop-overlay" onClick={() => setMenu(null)} />
-                  <div className="syria-pop syria-pop-pax" onClick={e => e.stopPropagation()}>
-                    <div className="syria-sh-bar"><div className="syria-sh-handle" /></div>
-                    <span className="syria-pop-title">عدد المسافرين</span>
-                    <div className="syria-stepper">
-                      <button className="syria-step-btn" onClick={() => setPax(Math.max(1, pax - 1))} disabled={pax <= 1}>−</button>
-                      <span className="syria-step-val">{pax}</span>
-                      <button className="syria-step-btn" onClick={() => setPax(Math.min(9, pax + 1))} disabled={pax >= 9}>+</button>
-                    </div>
-                    <span className="syria-step-label">{pax === 1 ? 'مسافر' : 'مسافرين'}</span>
-                    <button className="syria-pop-done" onClick={() => setMenu(null)}>تأكيد</button>
-                  </div>
-                </>,
-                document.body
-              )}
-              <button
-                className="syria-pill"
-                onClick={e => { e.stopPropagation(); setMenu(menu === "cabin" ? null : "cabin"); }}
-              >
-                {cMap[cabin]}
-                <svg width="10" height="6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 10 6">
-                  <path d="M1 1l4 4 4-4" />
-                </svg>
-              </button>
-              {menu === "cabin" && createPortal(
-                <>
-                  <div className="syria-pop-overlay" onClick={() => setMenu(null)} />
-                  <div className="syria-pop syria-pop-cabin" onClick={e => e.stopPropagation()}>
-                    <div className="syria-sh-bar"><div className="syria-sh-handle" /></div>
-                    <span className="syria-pop-title">درجة السفر</span>
-                    {Object.entries(cMap).map(([k, v]) => (
-                      <button
-                        key={k}
-                        className={`syria-pop-opt ${cabin === k ? "syria-pop-sel" : ""}`}
-                        onClick={() => { setCabin(k); setMenu(null); }}
-                      >
-                        {v}
-                      </button>
-                    ))}
-                  </div>
-                </>,
-                document.body
-              )}
-            </div>
-
             {/* Route fields */}
             <div className="syria-form">
               <div className="syria-route-box">
                 <button
                   className="syria-inp syria-inp-from"
-                  onClick={() => dir === "to" && setPicker(true)}
+                  onClick={() => dir === "to" ? setPicker(true) : setAirportPicker(true)}
                 >
                   <div className="syria-inp-ring"><div className="syria-inp-dot" /></div>
                   <div className="syria-inp-col">
@@ -289,7 +234,7 @@ const Index = () => {
                 </button>
 
                 <div className="syria-swap-zone">
-                  <button className="syria-swap-circle" onClick={() => setDir(d => d === "to" ? "from" : "to")}>
+                  <button className="syria-swap-circle" onClick={e => { e.stopPropagation(); setDir(d => d === "to" ? "from" : "to"); }}>
                     <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" />
                     </svg>
@@ -298,7 +243,7 @@ const Index = () => {
 
                 <button
                   className="syria-inp"
-                  onClick={() => dir === "from" && setPicker(true)}
+                  onClick={() => dir === "from" ? setPicker(true) : setAirportPicker(true)}
                 >
                   <svg className="syria-inp-pin" width="20" height="20" fill="none" viewBox="0 0 24 24">
                     <path d="M20 10c0 4.418-8 14-8 14s-8-9.582-8-14a8 8 0 1116 0z" fill="hsl(217 91% 92%)" stroke="hsl(217 91% 60%)" strokeWidth="1.5" />
@@ -331,33 +276,6 @@ const Index = () => {
                     </span>
                   </div>
                 </button>
-                {trip === "roundtrip" && (
-                  <button
-                    className={`syria-date-inp${!returnDate ? " syria-date-empty" : ""}`}
-                    onClick={() => {
-                      const base = returnDate || selectedDate;
-                      setCalMonth(new Date(base.getFullYear(), base.getMonth(), 1));
-                      setMenu("return");
-                    }}
-                  >
-                    <svg width="20" height="20" fill="none" stroke="hsl(215 16% 65%)" strokeWidth="1.5" viewBox="0 0 24 24">
-                      <rect x="3" y="4" width="18" height="18" rx="2.5" />
-                      <line x1="16" y1="2" x2="16" y2="6" />
-                      <line x1="8" y1="2" x2="8" y2="6" />
-                      <line x1="3" y1="10" x2="21" y2="10" />
-                    </svg>
-                    <div className="syria-inp-col">
-                      <span className="syria-inp-label">العودة</span>
-                      {returnDate ? (
-                        <span className="syria-inp-value syria-date-value">
-                          {format(returnDate, "d MMMM yyyy", { locale: ar })}
-                        </span>
-                      ) : (
-                        <span className="syria-date-placeholder">+ تاريخ العودة</span>
-                      )}
-                    </div>
-                  </button>
-                )}
               </div>
 
               {/* Loading */}
@@ -384,15 +302,13 @@ const Index = () => {
         <ExploreDealsSection 
           navigate={navigate}
           userLocation={userLocation}
-          userCityName={userDestination?.city_ar || null}
+          userCityName={userCityNameDirect || userDestination?.city_ar || null}
           isDetecting={isDetecting}
         />
 
-        <footer className="syria-ft">© {new Date().getFullYear()} رحلات سوريا · جميع الحقوق محفوظة</footer>
-
         {/* CITY PICKER */}
         {picker && (
-          <div className="syria-ov" onClick={() => { setPicker(false); setQ(''); }}>
+          <div className="syria-ov" role="dialog" aria-modal="true" aria-label="اختيار المدينة" onClick={() => { setPicker(false); setQ(''); }}>
             <div className="syria-sheet" onClick={e => e.stopPropagation()}>
               <div className="syria-sh-bar"><div className="syria-sh-handle" /></div>
               <div className="syria-sh-head">
@@ -406,41 +322,89 @@ const Index = () => {
                 <button className="syria-sh-x" onClick={() => { setPicker(false); setQ(''); }}>إلغاء</button>
               </div>
               <div className="syria-sh-body">
-                {filteredDestinations.length === 0 ? (
+                {filterResult.destinations.length === 0 ? (
                   <div className="syria-sh-none">لا توجد نتائج</div>
                 ) : (
-                  filteredDestinations.map(dest => (
-                    <button
-                      key={dest.id}
-                      className={`syria-sh-row ${userLocation === dest.airport_code ? "syria-sh-act" : ""}`}
-                      onClick={() => handleSelectCity(dest)}
-                    >
-                      <div className="syria-sh-icon">
-                        <Plane className="h-5 w-5" style={{ color: "hsl(215 16% 47%)" }} />
+                  <>
+                    {filterResult.matchedCountry && (
+                      <div className="syria-sh-country-header">
+                        <span className="syria-sh-country-badge">{filterResult.matchedCountry}</span>
+                        <span className="syria-sh-country-count">
+                          {filterResult.destinations.length} {filterResult.destinations.length > 2 ? 'مدن' : filterResult.destinations.length === 2 ? 'مدينتان' : 'مدينة'}
+                        </span>
                       </div>
-                      <div className="syria-sh-col">
-                        <span className="syria-sh-n">{dest.city_ar}</span>
-                        <span className="syria-sh-c">{dest.country_ar}</span>
-                      </div>
-                      <span className="syria-sh-cd">{dest.airport_code}</span>
-                      {userLocation === dest.airport_code && (
-                        <svg width="18" height="18" fill="none" stroke="hsl(217 91% 60%)" strokeWidth="2.5" viewBox="0 0 24 24">
-                          <path d="M20 6L9 17l-5-5" />
-                        </svg>
-                      )}
-                    </button>
-                  ))
+                    )}
+                    {filterResult.destinations.map(dest => (
+                      <button
+                        key={dest.id}
+                        className={`syria-sh-row ${userLocation === dest.airport_code ? "syria-sh-act" : ""}${dest.isCountryMatch ? " syria-sh-country-match" : ""}`}
+                        onClick={() => handleSelectCity(dest)}
+                      >
+                        <div className="syria-sh-icon">
+                          <Plane className="h-5 w-5" style={{ color: "hsl(215 16% 47%)" }} />
+                        </div>
+                        <div className="syria-sh-col">
+                          <span className="syria-sh-n">{dest.city_ar}</span>
+                          <span className="syria-sh-c">{dest.country_ar}</span>
+                        </div>
+                        <span className="syria-sh-cd">{dest.airport_code}</span>
+                        {userLocation === dest.airport_code && (
+                          <svg width="18" height="18" fill="none" stroke="hsl(217 91% 60%)" strokeWidth="2.5" viewBox="0 0 24 24">
+                            <path d="M20 6L9 17l-5-5" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </>
                 )}
               </div>
             </div>
           </div>
         )}
+        {/* AIRPORT PICKER */}
+        {airportPicker && (
+          <div className="syria-ov" role="dialog" aria-modal="true" aria-label="اختيار المطار" onClick={() => setAirportPicker(false)}>
+            <div className="syria-sheet" onClick={e => e.stopPropagation()}>
+              <div className="syria-sh-bar"><div className="syria-sh-handle" /></div>
+              <div className="syria-sh-head">
+                <span style={{ fontSize: '1.05rem', fontWeight: 600, color: 'hsl(215 25% 15%)' }}>اختر المطار</span>
+                <button className="syria-sh-x" onClick={() => setAirportPicker(false)}>إلغاء</button>
+              </div>
+              <div className="syria-sh-body">
+                {([
+                  { id: 'dam' as AirportTab, name: 'دمشق', code: 'DAM', country: 'سوريا' },
+                  { id: 'alp' as AirportTab, name: 'حلب', code: 'ALP', country: 'سوريا' },
+                ] as const).map(airport => (
+                  <button
+                    key={airport.id}
+                    className={`syria-sh-row ${tab === airport.id ? "syria-sh-act" : ""}`}
+                    onClick={() => { setTab(airport.id); setAirportPicker(false); }}
+                  >
+                    <div className="syria-sh-icon">
+                      <Plane className="h-5 w-5" style={{ color: "hsl(215 16% 47%)" }} />
+                    </div>
+                    <div className="syria-sh-col">
+                      <span className="syria-sh-n">{airport.name}</span>
+                      <span className="syria-sh-c">{airport.country}</span>
+                    </div>
+                    <span className="syria-sh-cd">{airport.code}</span>
+                    {tab === airport.id && (
+                      <svg width="18" height="18" fill="none" stroke="hsl(217 91% 60%)" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
         {/* DATE PICKER */}
-        {(menu === "depart" || menu === "return") && (
-          <div className="syria-ov" onClick={() => setMenu(null)}>
+        {menu === "depart" && (
+          <div className="syria-ov" role="dialog" aria-modal="true" aria-label="اختيار التاريخ" onClick={() => setMenu(null)}>
             <div className="syria-cal-sheet" onClick={e => e.stopPropagation()}>
               <div className="syria-sh-bar"><div className="syria-sh-handle" /></div>
-              <span className="syria-pop-title">{menu === "depart" ? "تاريخ المغادرة" : "تاريخ العودة"}</span>
+              <span className="syria-pop-title">تاريخ المغادرة</span>
               <div className="syria-cal-nav">
                 <button className="syria-cal-arrow" onClick={() => setCalMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))}>
                   <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -461,13 +425,11 @@ const Index = () => {
                 {calDays.map((d, i) => {
                   if (d === null) return <span key={`e${i}`} />;
                   const date = new Date(calMonth.getFullYear(), calMonth.getMonth(), d);
-                  const minDate = menu === "return" ? selectedDate : today;
-                  const isPast = date.getTime() < minDate.getTime();
-                  const activeDate = menu === "depart" ? selectedDate : returnDate;
-                  const isSelected = activeDate &&
-                    date.getDate() === activeDate.getDate() &&
-                    date.getMonth() === activeDate.getMonth() &&
-                    date.getFullYear() === activeDate.getFullYear();
+                  const isPast = date.getTime() < today.getTime();
+                  const isSelected =
+                    date.getDate() === selectedDate.getDate() &&
+                    date.getMonth() === selectedDate.getMonth() &&
+                    date.getFullYear() === selectedDate.getFullYear();
                   const isToday = date.getTime() === today.getTime();
                   return (
                     <button

@@ -281,13 +281,13 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-width: 100px;
+  min-width: 110px;
   justify-content: center;
-  padding: 10px 20px;
+  padding: 12px 28px;
   border-radius: 100px;
   background: hsl(217 91% 60%);
   color: hsl(0 0% 100%);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   text-decoration: none;
   transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
@@ -396,7 +396,7 @@
   .search-fc-time { font-size: 18px; }
   .search-fc-price { font-size: 24px; }
   .search-results { padding: 12px 14px; }
-  .search-fc-book { padding: 9px 20px; font-size: 13px; }
+  .search-fc-book { padding: 11px 24px; font-size: 14px; }
 }
 
 @media (max-width: 360px) {
@@ -408,5 +408,5 @@
   .search-flight-card { padding: 12px; }
   .search-fc-time { font-size: 16px; }
   .search-fc-price { font-size: 22px; }
-  .search-fc-book { padding: 8px 18px; font-size: 13px; }
+  .search-fc-book { padding: 10px 22px; font-size: 13px; }
 }

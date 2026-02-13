@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useAllFlightsForAirport } from "@/hooks/useFlights";
 import { PriceCalendar } from "@/components/flight/PriceCalendar";
 import { ExploreFlightCard } from "@/components/flight/ExploreFlightCard";
 import type { Flight } from "@/types/flight";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { normalizeArabic } from "@/lib/destinationFilter";
 import "./Explore.css";
 
 const MONTH_NAMES_AR = [
@@ -46,6 +48,7 @@ const Explore = () => {
   const [selectedDestination, setSelectedDestination] = useState<string | null>(
     () => searchParams.get("dest") || null
   );
+  const [pillQuery, setPillQuery] = useState('');
 
   const { data: flights, isLoading } = useAllFlightsForAirport(code);
 
@@ -62,12 +65,13 @@ const Explore = () => {
   useEffect(() => {
     setSelectedDay(null);
     setSelectedDestination(null);
+    setPillQuery('');
   }, [code]);
 
   // Get unique destinations for pills
   const destinations = useMemo(() => {
     if (!flights) return [];
-    const destMap = new Map<string, { code: string; name: string }>();
+    const destMap = new Map<string, { code: string; name: string; country_ar: string }>();
 
     flights.forEach((f) => {
       const other =
@@ -76,12 +80,37 @@ const Explore = () => {
         destMap.set(other.airport_code, {
           code: other.airport_code,
           name: other.city_ar,
+          country_ar: other.country_ar,
         });
       }
     });
 
     return Array.from(destMap.values());
   }, [flights, code]);
+
+  // Filter destination pills by search query
+  const filteredPills = useMemo(() => {
+    if (!pillQuery) return { pills: destinations, matchedCountry: null as string | null };
+    const q = pillQuery.toLowerCase();
+    const nq = normalizeArabic(pillQuery);
+
+    // Check for country match
+    const countryMatches = new Set<string>();
+    for (const d of destinations) {
+      if (normalizeArabic(d.country_ar).includes(nq)) {
+        countryMatches.add(d.country_ar);
+      }
+    }
+    const matchedCountry = countryMatches.size === 1 ? Array.from(countryMatches)[0] : null;
+
+    const pills = destinations.filter(d =>
+      normalizeArabic(d.name).includes(nq) ||
+      normalizeArabic(d.country_ar).includes(nq) ||
+      d.code.toLowerCase().includes(q)
+    );
+
+    return { pills, matchedCountry };
+  }, [destinations, pillQuery]);
 
   // Filtered flights based on selected destination
   const filteredFlights = useMemo(() => {
@@ -126,6 +155,7 @@ const Explore = () => {
     : "جميع الرحلات المتاحة";
 
   return (
+    <>
     <div dir="rtl" className={`explore-root ${ready ? "explore-on" : ""}`}>
       {/* Header */}
       <header className="explore-header">
@@ -153,21 +183,45 @@ const Explore = () => {
 
       {isLoading ? (
         <div className="explore-loading">
-          <Loader2 className="h-5 w-5 animate-spin explore-loading-icon" />
-          <span>جاري تحميل الرحلات...</span>
+          <LoadingSpinner text="جاري تحميل الرحلات..." />
         </div>
       ) : (
         <>
+          {/* Destination search */}
+          <div className="explore-dest-search-wrap">
+            <input
+              value={pillQuery}
+              onChange={e => setPillQuery(e.target.value)}
+              placeholder="البحث عن وجهة أو دولة..."
+              className="explore-dest-search"
+            />
+            {pillQuery && (
+              <button className="explore-dest-search-clear" onClick={() => setPillQuery('')}>✕</button>
+            )}
+          </div>
+
+          {/* Country badge */}
+          {filteredPills.matchedCountry && (
+            <div className="explore-pills-country-badge">
+              {filteredPills.matchedCountry}
+              <span className="explore-pills-country-count">
+                — {filteredPills.pills.length} {filteredPills.pills.length > 2 ? 'مدن' : filteredPills.pills.length === 2 ? 'وجهتان' : 'وجهة'}
+              </span>
+            </div>
+          )}
+
           {/* Destination pills */}
           <div className="explore-pills-wrap">
             <div className="explore-pills">
-              <button
-                className={`explore-pill ${selectedDestination === null ? "explore-pill-on" : ""}`}
-                onClick={() => setSelectedDestination(null)}
-              >
-                جميع الوجهات
-              </button>
-              {destinations.map((d) => (
+              {!pillQuery && (
+                <button
+                  className={`explore-pill ${selectedDestination === null ? "explore-pill-on" : ""}`}
+                  onClick={() => setSelectedDestination(null)}
+                >
+                  جميع الوجهات
+                </button>
+              )}
+              {filteredPills.pills.map((d) => (
                 <button
                   key={d.code}
                   className={`explore-pill ${selectedDestination === d.code ? "explore-pill-on" : ""}`}
@@ -211,6 +265,7 @@ const Explore = () => {
         </>
       )}
     </div>
+    </>
   );
 };
 

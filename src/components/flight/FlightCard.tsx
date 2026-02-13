@@ -3,27 +3,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Flight } from "@/types/flight";
+import { formatTime, formatDuration, formatPrice } from "@/lib/formatters";
 
 interface FlightCardProps {
   flight: Flight;
 }
 
 export function FlightCard({ flight }: FlightCardProps) {
-  const formatTime = (time: string) => {
-    return time.slice(0, 5);
-  };
-
-  const formatDuration = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}س ${mins}د`;
-  };
-
-  const formatPrice = (price: number | null) => {
-    if (!price) return "اتصل للسعر";
-    return `$${price.toLocaleString()}`;
-  };
-
   return (
     <Card className="hover:shadow-flight transition-all duration-300 border-border/50 overflow-hidden group">
       <CardContent className="p-0">
