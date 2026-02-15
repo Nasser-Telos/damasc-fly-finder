@@ -9,15 +9,13 @@ export const countryGeoMapping: Record<string, GeoEntry> = {
   QA: { airportCode: 'DOH', cityNameAr: 'الدوحة' },
   SA: { airportCode: 'JED', cityNameAr: 'جدة' },
   KW: { airportCode: 'KWI', cityNameAr: 'الكويت' },
-  BH: { airportCode: 'BAH', cityNameAr: 'البحرين' },
-  OM: { airportCode: 'MCT', cityNameAr: 'مسقط' },
+  BH: { airportCode: 'DOH', cityNameAr: 'الدوحة' },
+  OM: { airportCode: 'DXB', cityNameAr: 'دبي' },
   JO: { airportCode: 'AMM', cityNameAr: 'عمّان' },
-  LB: { airportCode: 'BEY', cityNameAr: 'بيروت' },
   IQ: { airportCode: 'BGW', cityNameAr: 'بغداد' },
   YE: { airportCode: 'ADE', cityNameAr: 'عدن' },
 
   // North Africa
-  EG: { airportCode: 'CAI', cityNameAr: 'القاهرة' },
   LY: { airportCode: 'TIP', cityNameAr: 'طرابلس' },
   TN: { airportCode: 'TUN', cityNameAr: 'تونس' },
   DZ: { airportCode: 'ALG', cityNameAr: 'الجزائر' },
@@ -42,8 +40,11 @@ export const countryGeoMapping: Record<string, GeoEntry> = {
   IT: { airportCode: 'FCO', cityNameAr: 'روما' },
   ES: { airportCode: 'MAD', cityNameAr: 'مدريد' },
 
-  // Russia & CIS
-  RU: { airportCode: 'SVO', cityNameAr: 'موسكو' },
+  // Romania
+  RO: { airportCode: 'OTP', cityNameAr: 'بوخارست' },
+
+  // Armenia
+  AM: { airportCode: 'EVN', cityNameAr: 'يريفان' },
 
   // Americas
   US: { airportCode: 'JFK', cityNameAr: 'نيويورك' },

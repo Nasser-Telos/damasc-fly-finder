@@ -48,7 +48,11 @@ export function filterDestinations(
 
   for (const d of destinations) {
     const cityMatch =
-      normalizeArabic(d.city_ar).includes(normalizedQuery) || d.airport_code.toLowerCase().includes(lower);
+      normalizeArabic(d.city_ar).includes(normalizedQuery) ||
+      d.city.toLowerCase().includes(lower) ||
+      d.airport_code.toLowerCase().includes(lower) ||
+      normalizeArabic(d.airport_name_ar).includes(normalizedQuery) ||
+      d.airport_name.toLowerCase().includes(lower);
     const countryMatch = normalizeArabic(d.country_ar).includes(normalizedQuery);
 
     if (cityMatch || countryMatch) {

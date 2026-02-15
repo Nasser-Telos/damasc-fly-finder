@@ -1,9 +1,11 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useState, useMemo, useEffect } from "react";
-import { ArrowRight, ArrowLeft, Plane, Clock, ExternalLink, ChevronUp } from "lucide-react";
-import { useDamascusFlights, useAleppoFlights } from "@/hooks/useFlights";
-import type { Flight } from "@/types/flight";
-import { formatTime, formatDuration, formatPrice } from "@/lib/formatters";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { ArrowRight, ArrowLeft, Plane, Clock, ExternalLink, ChevronUp, RefreshCw } from "lucide-react";
+import { useFlightSearch } from "@/hooks/useFlightSearch";
+import type { LiveFlight, FlightSearchRequest } from "@/types/flight";
+import { formatDuration, formatPrice } from "@/lib/formatters";
+import { getAirlineArabicName } from "@/lib/airlineLookup";
+import { buildGoogleFlightsUrl } from "@/lib/flightMapper";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import "./Search.css";
 
@@ -14,13 +16,30 @@ const AIRPORT_LABELS: Record<string, string> = {
   ALP: "حلب",
 };
 
-function SearchFlightCard({ flight, isCheapest, index = 0 }: { flight: Flight; isCheapest?: boolean; index?: number }) {
+const STATUS_MESSAGES = [
+  { delay: 0, text: "جاري البحث في Google Flights..." },
+  { delay: 5000, text: "جاري مقارنة الأسعار..." },
+  { delay: 15000, text: "جاري تحليل أفضل العروض..." },
+  { delay: 30000, text: "يتم الآن جلب النتائج..." },
+];
+
+function SearchFlightCard({ flight, isCheapest, index = 0 }: { flight: LiveFlight; isCheapest?: boolean; index?: number }) {
+  const arabicName = getAirlineArabicName(flight.airlineCode);
+  const departureId = flight.departureAirport.id;
+  const arrivalId = flight.arrivalAirport.id;
+
+  const layoverText = useMemo(() => {
+    if (!flight.layovers || flight.layovers.length === 0) return null;
+    return flight.layovers
+      .map(l => `${Math.floor(l.duration / 60)}س ${l.duration % 60}د في ${l.name}`)
+      .join(' · ');
+  }, [flight.layovers]);
+
   return (
     <div
       className={`search-flight-card search-flight-fadein${isCheapest ? " search-flight-card-best" : ""}`}
       style={{ animationDelay: `${index * 60}ms` }}
     >
-      {/* Cheapest Badge */}
       {isCheapest && (
         <div className="search-fc-badge">
           <span>★</span>
@@ -28,29 +47,45 @@ function SearchFlightCard({ flight, isCheapest, index = 0 }: { flight: Flight; i
         </div>
       )}
 
+      {flight.isBest && !isCheapest && (
+        <div className="search-fc-badge" style={{ background: 'hsl(142 71% 45%)' }}>
+          <span>✓</span>
+          أفضل رحلة
+        </div>
+      )}
+
       {/* Airline */}
       <div className="search-fc-top">
         <div className="search-fc-logo">
-          {flight.airline?.code}
+          {flight.airlineLogo ? (
+            <img
+              src={flight.airlineLogo}
+              alt={flight.airlineName}
+              style={{ width: 28, height: 28, borderRadius: 4, objectFit: 'contain' }}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling && ((e.target as HTMLImageElement).parentElement!.textContent = flight.airlineCode); }}
+            />
+          ) : (
+            flight.airlineCode
+          )}
         </div>
         <div className="search-fc-airline-info">
-          <span className="search-fc-airline-name">{flight.airline?.name_ar}</span>
-          <span className="search-fc-flight-num">{flight.flight_number}</span>
+          <span className="search-fc-airline-name">{arabicName || flight.airlineName}</span>
+          <span className="search-fc-flight-num">{flight.flightNumber}</span>
         </div>
       </div>
 
       {/* Route */}
       <div className="search-fc-route">
         <div className="search-fc-point">
-          <span className="search-fc-time">{formatTime(flight.departure_time)}</span>
-          <span className="search-fc-city">{flight.origin?.city_ar}</span>
-          <span className="search-fc-code">{flight.origin?.airport_code}</span>
+          <span className="search-fc-time">{flight.departureTime}</span>
+          <span className="search-fc-city">{flight.originDestination?.city_ar || flight.departureAirport.name}</span>
+          <span className="search-fc-code">{departureId}</span>
         </div>
 
         <div className="search-fc-middle">
           <span className="search-fc-duration">
             <Clock className="h-3 w-3" />
-            {formatDuration(flight.duration_minutes)}
+            {formatDuration(flight.totalDuration)}
           </span>
           <div className="search-fc-line">
             <span className="search-fc-dot" />
@@ -62,32 +97,35 @@ function SearchFlightCard({ flight, isCheapest, index = 0 }: { flight: Flight; i
           <span className={`search-fc-stops${flight.stops > 0 ? " search-fc-stops-transfer" : ""}`}>
             {flight.stops === 0 ? "مباشرة" : `${flight.stops} توقف`}
           </span>
+          {layoverText && (
+            <span className="search-fc-layover-detail" style={{ fontSize: '0.65rem', color: 'hsl(215 16% 55%)', marginTop: 2 }}>
+              {layoverText}
+            </span>
+          )}
         </div>
 
         <div className="search-fc-point">
-          <span className="search-fc-time">{formatTime(flight.arrival_time)}</span>
-          <span className="search-fc-city">{flight.destination?.city_ar}</span>
-          <span className="search-fc-code">{flight.destination?.airport_code}</span>
+          <span className="search-fc-time">{flight.arrivalTime}</span>
+          <span className="search-fc-city">{flight.arrivalDestination?.city_ar || flight.arrivalAirport.name}</span>
+          <span className="search-fc-code">{arrivalId}</span>
         </div>
       </div>
 
       {/* Price & Book */}
       <div className="search-fc-bottom">
         <div>
-          <span className="search-fc-price">{formatPrice(flight.price_usd)}</span>
+          <span className="search-fc-price">{formatPrice(flight.price)}</span>
           <span className="search-fc-price-label">للشخص</span>
         </div>
-        {flight.airline?.website_url && (
-          <a
-            href={flight.airline.website_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="search-fc-book"
-          >
-            {flight.price_usd ? "احجز" : "استعلم عن السعر"}
-            <ExternalLink className="h-3 w-3" />
-          </a>
-        )}
+        <a
+          href={buildGoogleFlightsUrl(departureId, arrivalId, "")}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="search-fc-book"
+        >
+          احجز
+          <ExternalLink className="h-3 w-3" />
+        </a>
       </div>
     </div>
   );
@@ -97,25 +135,71 @@ export default function SearchPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
+  const searchTriggered = useRef(false);
 
   const tripType = searchParams.get("type") || "to_damascus";
   const airportParam = searchParams.get("airport") || "DAM";
   const destinationCode = searchParams.get("destination") || undefined;
+  const dateParam = searchParams.get("date") || undefined;
   const airport = airportParam.toUpperCase();
 
-  const isAleppo = airport === "ALP";
-  const isDamascus = !isAleppo;
-
-  // Determine direction
   const isFromLocal = tripType.startsWith("from_");
-  const type: "from" | "to" = isFromLocal ? "from" : "to";
-  const destFilter = destinationCode === "all" ? undefined : destinationCode;
 
-  // Use the correct hook based on airport
-  const damascusResult = useDamascusFlights(type, destFilter);
-  const aleppoResult = useAleppoFlights(type, destFilter);
+  // Build API request params
+  const apiParams = useMemo((): FlightSearchRequest | null => {
+    if (!destinationCode || !dateParam) return null;
 
-  const { data: flights, isLoading } = isAleppo ? aleppoResult : damascusResult;
+    // Extract YYYY-MM-DD from date param (could be ISO string or already formatted)
+    const outbound_date = dateParam.includes('T') ? dateParam.split('T')[0] : dateParam;
+
+    let departure_id: string;
+    let arrival_id: string;
+
+    if (isFromLocal) {
+      departure_id = airport;
+      arrival_id = destinationCode;
+    } else {
+      departure_id = destinationCode;
+      arrival_id = airport;
+    }
+
+    return { departure_id, arrival_id, outbound_date };
+  }, [airport, destinationCode, dateParam, isFromLocal]);
+
+  const { flights, isSearching, error, search, totalFound } = useFlightSearch(apiParams);
+
+  // Auto-trigger search on mount
+  useEffect(() => {
+    if (apiParams && !searchTriggered.current) {
+      searchTriggered.current = true;
+      search();
+    }
+  }, [apiParams, search]);
+
+  // Progressive status messages
+  const [statusIndex, setStatusIndex] = useState(0);
+  const statusTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => {
+    if (isSearching) {
+      setStatusIndex(0);
+      statusTimers.current.forEach(clearTimeout);
+      statusTimers.current = [];
+
+      STATUS_MESSAGES.forEach((msg, i) => {
+        if (i > 0) {
+          const timer = setTimeout(() => setStatusIndex(i), msg.delay);
+          statusTimers.current.push(timer);
+        }
+      });
+    } else {
+      statusTimers.current.forEach(clearTimeout);
+      statusTimers.current = [];
+    }
+    return () => {
+      statusTimers.current.forEach(clearTimeout);
+    };
+  }, [isSearching]);
 
   const [sortBy, setSortBy] = useState<SortBy>("price");
   const [directOnly, setDirectOnly] = useState(false);
@@ -124,21 +208,19 @@ export default function SearchPage() {
     requestAnimationFrame(() => setReady(true));
   }, []);
 
-  // Build route label
   const localCity = AIRPORT_LABELS[airport] || "دمشق";
+
+  // Derive destination city from first flight result or code
   const destCity = useMemo(() => {
-    if (!flights || flights.length === 0) return "";
+    if (flights.length === 0) return "";
     if (isFromLocal) {
-      const dest = flights[0]?.destination?.city_ar;
-      return dest || "";
+      return flights[0]?.arrivalDestination?.city_ar || flights[0]?.arrivalAirport.name || "";
     }
-    const origin = flights[0]?.origin?.city_ar;
-    return origin || "";
+    return flights[0]?.originDestination?.city_ar || flights[0]?.departureAirport.name || "";
   }, [flights, isFromLocal]);
 
   // Filter and sort
   const filteredFlights = useMemo(() => {
-    if (!flights) return [];
     let result = [...flights];
 
     if (directOnly) {
@@ -148,11 +230,11 @@ export default function SearchPage() {
     result.sort((a, b) => {
       switch (sortBy) {
         case "price":
-          return (a.price_usd || 9999) - (b.price_usd || 9999);
+          return a.price - b.price;
         case "duration":
-          return a.duration_minutes - b.duration_minutes;
+          return a.totalDuration - b.totalDuration;
         case "departure":
-          return a.departure_time.localeCompare(b.departure_time);
+          return a.departureTime.localeCompare(b.departureTime);
         default:
           return 0;
       }
@@ -160,6 +242,34 @@ export default function SearchPage() {
 
     return result;
   }, [flights, sortBy, directOnly]);
+
+  // No params = show error
+  if (!apiParams) {
+    return (
+      <div dir="rtl" className={`search-root ${ready ? "search-on" : ""}`}>
+        <header className="search-header">
+          <button className="search-back" onClick={() => navigate(-1)}>
+            <ArrowRight className="h-5 w-5" />
+          </button>
+          <div className="search-route-info">
+            <span className="search-route-text">البحث عن رحلات</span>
+          </div>
+        </header>
+        <div className="search-no-flights">
+          <div className="search-no-flights-icon">✈️</div>
+          <div className="search-no-flights-title">معلومات البحث ناقصة</div>
+          <p>يرجى اختيار الوجهة والتاريخ من الصفحة الرئيسية</p>
+          <button
+            className="search-fc-book"
+            style={{ marginTop: 16 }}
+            onClick={() => navigate("/")}
+          >
+            العودة للرئيسية
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -175,65 +285,90 @@ export default function SearchPage() {
               <>
                 {localCity}
                 <ArrowLeft className="h-4 w-4 search-route-arrow-icon" />
-                {destCity || "جميع الوجهات"}
+                {destCity || destinationCode || "جميع الوجهات"}
               </>
             ) : (
               <>
-                {destCity || "جميع الوجهات"}
+                {destCity || destinationCode || "جميع الوجهات"}
                 <ArrowLeft className="h-4 w-4 search-route-arrow-icon" />
                 {localCity}
               </>
             )}
           </span>
           <span className="search-count">
-            {isLoading ? "جاري البحث..." : `${filteredFlights.length} رحلة متاحة`}
+            {isSearching
+              ? STATUS_MESSAGES[statusIndex].text
+              : `${filteredFlights.length} رحلة متاحة${totalFound > 0 ? ` (من ${totalFound})` : ""}`}
           </span>
         </div>
       </header>
 
       {/* Filter Pills */}
-      <div className="search-filters">
-        <div className="search-filters-inner">
-          <button
-            className={`search-filter-pill ${sortBy === "price" ? "search-filter-pill-on" : ""}`}
-            onClick={() => setSortBy("price")}
-          >
-            الأرخص
-            {sortBy === "price" && <ChevronUp className="h-3 w-3" />}
-          </button>
-          <button
-            className={`search-filter-pill ${sortBy === "duration" ? "search-filter-pill-on" : ""}`}
-            onClick={() => setSortBy("duration")}
-          >
-            الأقصر
-            {sortBy === "duration" && <ChevronUp className="h-3 w-3" />}
-          </button>
-          <button
-            className={`search-filter-pill ${sortBy === "departure" ? "search-filter-pill-on" : ""}`}
-            onClick={() => setSortBy("departure")}
-          >
-            وقت المغادرة
-            {sortBy === "departure" && <ChevronUp className="h-3 w-3" />}
-          </button>
-          <button
-            className={`search-filter-pill ${directOnly ? "search-filter-pill-on" : ""}`}
-            onClick={() => setDirectOnly(!directOnly)}
-          >
-            مباشرة فقط
-          </button>
+      {!isSearching && flights.length > 0 && (
+        <div className="search-filters">
+          <div className="search-filters-inner">
+            <button
+              className={`search-filter-pill ${sortBy === "price" ? "search-filter-pill-on" : ""}`}
+              onClick={() => setSortBy("price")}
+            >
+              الأرخص
+              {sortBy === "price" && <ChevronUp className="h-3 w-3" />}
+            </button>
+            <button
+              className={`search-filter-pill ${sortBy === "duration" ? "search-filter-pill-on" : ""}`}
+              onClick={() => setSortBy("duration")}
+            >
+              الأقصر
+              {sortBy === "duration" && <ChevronUp className="h-3 w-3" />}
+            </button>
+            <button
+              className={`search-filter-pill ${sortBy === "departure" ? "search-filter-pill-on" : ""}`}
+              onClick={() => setSortBy("departure")}
+            >
+              وقت المغادرة
+              {sortBy === "departure" && <ChevronUp className="h-3 w-3" />}
+            </button>
+            <button
+              className={`search-filter-pill ${directOnly ? "search-filter-pill-on" : ""}`}
+              onClick={() => setDirectOnly(!directOnly)}
+            >
+              مباشرة فقط
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Results */}
-      {isLoading ? (
+      {isSearching ? (
         <div className="search-loading">
-          <LoadingSpinner text="جاري البحث عن الرحلات..." size="lg" />
+          <LoadingSpinner text={STATUS_MESSAGES[statusIndex].text} size="lg" />
+        </div>
+      ) : error ? (
+        <div className="search-no-flights">
+          <div className="search-no-flights-icon">⚠️</div>
+          <div className="search-no-flights-title">حدث خطأ أثناء البحث</div>
+          <p>{error.message}</p>
+          <button
+            className="search-fc-book"
+            style={{ marginTop: 16, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            onClick={() => { searchTriggered.current = false; search(); }}
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            إعادة المحاولة
+          </button>
         </div>
       ) : filteredFlights.length === 0 ? (
         <div className="search-no-flights">
           <div className="search-no-flights-icon">✈️</div>
           <div className="search-no-flights-title">لا توجد رحلات</div>
-          <p>جرب تغيير الفلتر أو العودة واختيار وجهة مختلفة</p>
+          <p>لم يتم العثور على رحلات لهذا المسار في التاريخ المحدد</p>
+          <button
+            className="search-fc-book"
+            style={{ marginTop: 16 }}
+            onClick={() => navigate(-1)}
+          >
+            تغيير البحث
+          </button>
         </div>
       ) : (
         <div className="search-results">

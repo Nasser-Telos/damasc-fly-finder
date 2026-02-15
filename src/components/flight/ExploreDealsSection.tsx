@@ -1,4 +1,3 @@
-import { useMinPricesForAirports, useMinPriceForRoute } from "@/hooks/useFlights";
 import type { NavigateFunction } from "react-router-dom";
 
 const airports = [
@@ -16,17 +15,14 @@ interface Props {
 }
 
 export function ExploreDealsSection({ navigate, userLocation, userCityName, isDetecting }: Props) {
-  const { data: minPrices } = useMinPricesForAirports(["DAM", "ALP"]);
-  const { data: routeMinPrice } = useMinPriceForRoute(userLocation);
-
   const showPersonalCard = !isDetecting && userLocation && !SYRIAN_CODES.includes(userLocation) && userCityName;
 
   return (
     <div className="syria-explore-sec">
       <div className="syria-explore-header">
-        <h2 className="syria-explore-h2">وفّر على رحلتك القادمة</h2>
+        <h2 className="syria-explore-h2">استكشف الرحلات المتاحة</h2>
         <p className="syria-explore-desc">
-          اكتشف أرخص الأسعار المتاحة وأفضل أوقات السفر من خلال تقويم الأسعار
+          ابحث عن أفضل الأسعار المتاحة للرحلات من وإلى سوريا
         </p>
       </div>
 
@@ -47,14 +43,7 @@ export function ExploreDealsSection({ navigate, userLocation, userCityName, isDe
               <span className="syria-explore-name">رحلات من {userCityName}</span>
               <span className="syria-explore-tag-personal">مخصص لك</span>
             </div>
-            <span className="syria-explore-sub">رحلات إلى دمشق وحلب</span>
-            {routeMinPrice && (
-              <div className="syria-explore-meta">
-                <span className="syria-explore-price">
-                  ابتداءً من ${routeMinPrice}
-                </span>
-              </div>
-            )}
+            <span className="syria-explore-sub">ابحث عن رحلات إلى دمشق وحلب</span>
           </div>
           <div className="syria-explore-badge">{userLocation}</div>
           <svg className="syria-explore-chevron" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -64,7 +53,6 @@ export function ExploreDealsSection({ navigate, userLocation, userCityName, isDe
       )}
 
       {airports.map((a, i) => {
-        const info = minPrices?.[a.code];
         const delay = showPersonalCard ? 430 + i * 80 : 400 + i * 80;
         return (
           <button
@@ -81,25 +69,11 @@ export function ExploreDealsSection({ navigate, userLocation, userCityName, isDe
             <div className="syria-explore-info">
               <div className="syria-explore-top-row">
                 <span className="syria-explore-name">رحلات {a.name}</span>
-                {info && info.minPrice > 0 && (
-                  <span className="syria-explore-tag">أسعار مميزة</span>
-                )}
               </div>
               <span className="syria-explore-sub">{a.sub}</span>
-              {info && (
-                <div className="syria-explore-meta">
-                  {info.destinationCount > 0 && (
-                    <span className="syria-explore-dest-count">
-                      {info.destinationCount} وجهات متاحة
-                    </span>
-                  )}
-                  {info.minPrice > 0 && (
-                    <span className="syria-explore-price">
-                      ابتداءً من ${info.minPrice}
-                    </span>
-                  )}
-                </div>
-              )}
+              <div className="syria-explore-meta">
+                <span className="syria-explore-dest-count">ابحث عن رحلات</span>
+              </div>
             </div>
             <div className="syria-explore-badge">{a.code}</div>
             <svg className="syria-explore-chevron" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">

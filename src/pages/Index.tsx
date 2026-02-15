@@ -31,9 +31,12 @@ const Index = () => {
 
   const { data: destinations } = useDestinations();
 
-  // Non-Syrian destinations for city picker
+  // Non-Syrian destinations (show all active, not just those with flights)
   const otherDestinations = useMemo(() => {
-    return destinations?.filter(d => d.airport_code !== 'DAM' && d.airport_code !== 'ALP') || [];
+    if (!destinations) return [];
+    return destinations.filter(
+      d => d.airport_code !== 'DAM' && d.airport_code !== 'ALP'
+    );
   }, [destinations]);
 
   // Filtered destinations for search
@@ -48,15 +51,12 @@ const Index = () => {
     const applyCountry = (countryCode: string | null) => {
       if (countryCode === 'SY') {
         setUserLocation(DEFAULT_GEO.airportCode);
-        setUserCityNameDirect(DEFAULT_GEO.cityNameAr);
         setDir('from');
       } else if (countryCode && countryGeoMapping[countryCode]) {
         const geo = countryGeoMapping[countryCode];
         setUserLocation(geo.airportCode);
-        setUserCityNameDirect(geo.cityNameAr);
       } else {
         setUserLocation(DEFAULT_GEO.airportCode);
-        setUserCityNameDirect(DEFAULT_GEO.cityNameAr);
       }
     };
 
@@ -142,14 +142,14 @@ const Index = () => {
 
   const weekDayLabels = ['سب', 'أح', 'اث', 'ثل', 'أر', 'خم', 'جم'];
 
-  const airportName = tab === 'dam' ? 'دمشق' : 'حلب';
+  const airportName = tab === 'dam' ? 'مطار دمشق الدولي' : 'مطار حلب الدولي';
   const airportCode = tab === 'dam' ? 'DAM' : 'ALP';
-  const city = userCityNameDirect || userDestination?.city_ar || (isDetecting ? 'جاري التحديد...' : 'اختر مدينة');
+  const city = userCityNameDirect || userDestination?.airport_name_ar || (isDetecting ? 'جاري التحديد...' : 'اختر وجهة');
   const cc = userLocation || '';
 
   const handleSelectCity = (dest: Destination) => {
     setUserLocation(dest.airport_code);
-    setUserCityNameDirect(dest.city_ar);
+    setUserCityNameDirect(dest.airport_name_ar);
     setPicker(false);
     setQ('');
   };
@@ -165,7 +165,7 @@ const Index = () => {
     params.set("type", searchType);
     params.set("airport", airportCode);
     if (userLocation) params.set("destination", userLocation);
-    if (selectedDate) params.set("date", selectedDate.toISOString());
+    if (selectedDate) params.set("date", selectedDate.toISOString().split("T")[0]);
     navigate(`/search?${params.toString()}`);
   };
 
@@ -302,7 +302,7 @@ const Index = () => {
         <ExploreDealsSection 
           navigate={navigate}
           userLocation={userLocation}
-          userCityName={userCityNameDirect || userDestination?.city_ar || null}
+          userCityName={userCityNameDirect || userDestination?.airport_name_ar || null}
           isDetecting={isDetecting}
         />
 
@@ -344,8 +344,8 @@ const Index = () => {
                           <Plane className="h-5 w-5" style={{ color: "hsl(215 16% 47%)" }} />
                         </div>
                         <div className="syria-sh-col">
-                          <span className="syria-sh-n">{dest.city_ar}</span>
-                          <span className="syria-sh-c">{dest.country_ar}</span>
+                          <span className="syria-sh-n">{dest.airport_name_ar}</span>
+                          <span className="syria-sh-c">{dest.city_ar} · {dest.country_ar}</span>
                         </div>
                         <span className="syria-sh-cd">{dest.airport_code}</span>
                         {userLocation === dest.airport_code && (
@@ -372,8 +372,8 @@ const Index = () => {
               </div>
               <div className="syria-sh-body">
                 {([
-                  { id: 'dam' as AirportTab, name: 'دمشق', code: 'DAM', country: 'سوريا' },
-                  { id: 'alp' as AirportTab, name: 'حلب', code: 'ALP', country: 'سوريا' },
+                  { id: 'dam' as AirportTab, name: 'مطار دمشق الدولي', city: 'دمشق', code: 'DAM', country: 'سوريا' },
+                  { id: 'alp' as AirportTab, name: 'مطار حلب الدولي', city: 'حلب', code: 'ALP', country: 'سوريا' },
                 ] as const).map(airport => (
                   <button
                     key={airport.id}
@@ -385,7 +385,7 @@ const Index = () => {
                     </div>
                     <div className="syria-sh-col">
                       <span className="syria-sh-n">{airport.name}</span>
-                      <span className="syria-sh-c">{airport.country}</span>
+                      <span className="syria-sh-c">{airport.city} · {airport.country}</span>
                     </div>
                     <span className="syria-sh-cd">{airport.code}</span>
                     {tab === airport.id && (
