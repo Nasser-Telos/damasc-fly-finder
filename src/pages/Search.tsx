@@ -207,20 +207,20 @@ export default function SearchPage() {
   }, []);
 
   const localDest = airportLookup.get(airport);
-  const localCity = localDest?.city_ar || airport;
+  const localCity = localDest?.airport_name_ar || localDest?.city_ar || airport;
 
   // Derive destination city from first flight result or destinations data
   const destCity = useMemo(() => {
     if (flights.length > 0) {
       if (isFromLocal) {
-        return flights[0]?.arrivalDestination?.city_ar || flights[0]?.arrivalAirport.name || "";
+        return flights[0]?.arrivalDestination?.airport_name_ar || flights[0]?.arrivalDestination?.city_ar || flights[0]?.arrivalAirport.name || "";
       }
-      return flights[0]?.originDestination?.city_ar || flights[0]?.departureAirport.name || "";
+      return flights[0]?.originDestination?.airport_name_ar || flights[0]?.originDestination?.city_ar || flights[0]?.departureAirport.name || "";
     }
     // Fallback to destinations data
     if (destinationCode) {
       const dest = airportLookup.get(destinationCode);
-      if (dest) return dest.city_ar;
+      if (dest) return dest.airport_name_ar || dest.city_ar;
     }
     return "";
   }, [flights, isFromLocal, destinationCode]);
