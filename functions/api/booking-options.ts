@@ -59,7 +59,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     url.searchParams.set('outbound_date', outbound_date);
     url.searchParams.set('type', '2');
     url.searchParams.set('currency', 'USD');
-    url.searchParams.set('travel_class', '1');
+    url.searchParams.set('travel_class', 'economy');
     url.searchParams.set('booking_token', booking_token);
     url.searchParams.set('api_key', apiKey);
 
