@@ -1,4 +1,4 @@
-import type { FlightSearchRequest, ApifySearchResult } from '@/types/flight';
+import type { FlightSearchRequest, ApifySearchResult, BookingOption, BookingOptionsRequest } from '@/types/flight';
 
 export class FlightSearchError extends Error {
   statusCode: number;
@@ -49,10 +49,41 @@ export async function searchFlights(
 
   const data = await res.json();
 
-  // Apify returns array of dataset items — take first item
+  // SearchAPI.io returns the object directly (not wrapped in an array)
+  if (data && data.best_flights) {
+    return data as ApifySearchResult;
+  }
+
+  // Fallback: Apify-style array wrapper (backwards compat)
   if (Array.isArray(data) && data.length > 0) {
     return data[0] as ApifySearchResult;
   }
 
   return EMPTY_RESULT;
+}
+
+export async function fetchBookingOptions(
+  params: BookingOptionsRequest,
+  signal?: AbortSignal
+): Promise<BookingOption[]> {
+  const res = await fetch('/api/booking-options', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+    signal,
+  });
+
+  if (!res.ok) {
+    let message = 'فشل تحميل خيارات الحجز';
+    try {
+      const err = await res.json();
+      if (err.error) message = err.error;
+    } catch {
+      // ignore parse error
+    }
+    throw new FlightSearchError(message, res.status);
+  }
+
+  const data = await res.json();
+  return (data.booking_options ?? []) as BookingOption[];
 }

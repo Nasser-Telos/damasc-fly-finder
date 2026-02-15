@@ -100,6 +100,31 @@ export interface ApifySearchResult {
   };
 }
 
+// Booking option types (from SearchAPI.io booking_token lookup)
+
+export interface BookingRequest {
+  url: string;
+  post_data: string;
+}
+
+export interface BookingOption {
+  book_with: string;
+  airline?: boolean;
+  airline_logos?: string[];
+  price: number;
+  option_title?: string;
+  extensions?: string[];
+  baggage_prices?: string[];
+  booking_request: BookingRequest;
+}
+
+export interface BookingOptionsRequest {
+  booking_token: string;
+  departure_id: string;
+  arrival_id: string;
+  outbound_date: string;
+}
+
 // Client request to our CF function
 export interface FlightSearchRequest {
   departure_id: string;

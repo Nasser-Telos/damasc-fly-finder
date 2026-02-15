@@ -1,11 +1,12 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { ArrowRight, ArrowLeft, Plane, Clock, ExternalLink, ChevronUp, RefreshCw } from "lucide-react";
 import { useFlightSearch } from "@/hooks/useFlightSearch";
+import { useBookingOptions } from "@/hooks/useBookingOptions";
+import { BookingOptionsModal } from "@/components/flight/BookingOptionsModal";
 import type { LiveFlight, FlightSearchRequest } from "@/types/flight";
 import { formatDuration, formatPrice } from "@/lib/formatters";
 import { getAirlineArabicName } from "@/lib/airlineLookup";
-import { buildGoogleFlightsUrl } from "@/lib/flightMapper";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { destinations } from "@/data/destinations";
 import "./Search.css";
@@ -18,7 +19,7 @@ const STATUS_MESSAGES = [
   { delay: 0, text: "جاري البحث عن رحلات..." },
 ];
 
-function SearchFlightCard({ flight, isCheapest, index = 0 }: { flight: LiveFlight; isCheapest?: boolean; index?: number }) {
+function SearchFlightCard({ flight, isCheapest, index = 0, onBookClick }: { flight: LiveFlight; isCheapest?: boolean; index?: number; onBookClick: (flight: LiveFlight) => void }) {
   const arabicName = getAirlineArabicName(flight.airlineCode);
   const departureId = flight.departureAirport.id;
   const arrivalId = flight.arrivalAirport.id;
@@ -106,15 +107,13 @@ function SearchFlightCard({ flight, isCheapest, index = 0 }: { flight: LiveFligh
           <span className="search-fc-price">{formatPrice(flight.price)}</span>
           <span className="search-fc-price-label">للشخص</span>
         </div>
-        <a
-          href={buildGoogleFlightsUrl(departureId, arrivalId, "")}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
           className="search-fc-book"
+          onClick={() => onBookClick(flight)}
         >
           احجز
           <ExternalLink className="h-3 w-3" />
-        </a>
+        </button>
       </div>
     </div>
   );
@@ -134,12 +133,14 @@ export default function SearchPage() {
 
   const isFromLocal = tripType.startsWith("from_");
 
+  const outboundDate = useMemo(() => {
+    if (!dateParam) return "";
+    return dateParam.includes('T') ? dateParam.split('T')[0] : dateParam;
+  }, [dateParam]);
+
   // Build API request params
   const apiParams = useMemo((): FlightSearchRequest | null => {
     if (!destinationCode || !dateParam) return null;
-
-    // Extract YYYY-MM-DD from date param (could be ISO string or already formatted)
-    const outbound_date = dateParam.includes('T') ? dateParam.split('T')[0] : dateParam;
 
     let departure_id: string;
     let arrival_id: string;
@@ -152,10 +153,36 @@ export default function SearchPage() {
       arrival_id = airport;
     }
 
-    return { departure_id, arrival_id, outbound_date };
-  }, [airport, destinationCode, dateParam, isFromLocal]);
+    return { departure_id, arrival_id, outbound_date: outboundDate };
+  }, [airport, destinationCode, dateParam, isFromLocal, outboundDate]);
 
   const { flights, isSearching, error, search, totalFound } = useFlightSearch(apiParams);
+
+  // Booking options state
+  const [selectedFlight, setSelectedFlight] = useState<LiveFlight | null>(null);
+  const [bookingModalOpen, setBookingModalOpen] = useState(false);
+  const { bookingOptions, isLoading: bookingLoading, error: bookingError, fetchOptions, reset: resetBooking } = useBookingOptions();
+
+  const handleBookClick = useCallback((flight: LiveFlight) => {
+    if (!apiParams) return;
+    setSelectedFlight(flight);
+    setBookingModalOpen(true);
+    resetBooking();
+    fetchOptions({
+      booking_token: flight.bookingToken,
+      departure_id: apiParams.departure_id,
+      arrival_id: apiParams.arrival_id,
+      outbound_date: apiParams.outbound_date,
+    });
+  }, [apiParams, fetchOptions, resetBooking]);
+
+  const handleBookingModalChange = useCallback((open: boolean) => {
+    setBookingModalOpen(open);
+    if (!open) {
+      setSelectedFlight(null);
+      resetBooking();
+    }
+  }, [resetBooking]);
 
   // Auto-trigger search on mount
   useEffect(() => {
@@ -375,11 +402,25 @@ export default function SearchPage() {
               flight={flight}
               isCheapest={sortBy === "price" && index === 0}
               index={index}
+              onBookClick={handleBookClick}
             />
           ))}
         </div>
       )}
     </div>
+
+    {/* Booking Options Modal */}
+    <BookingOptionsModal
+      open={bookingModalOpen}
+      onOpenChange={handleBookingModalChange}
+      bookingOptions={bookingOptions}
+      isLoading={bookingLoading}
+      error={bookingError}
+      flightLabel={selectedFlight ? `${getAirlineArabicName(selectedFlight.airlineCode) || selectedFlight.airlineName} ${selectedFlight.flightNumber}` : ""}
+      departureId={apiParams.departure_id}
+      arrivalId={apiParams.arrival_id}
+      date={outboundDate}
+    />
     </>
   );
 }
