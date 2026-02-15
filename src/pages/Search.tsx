@@ -7,14 +7,12 @@ import { formatDuration, formatPrice } from "@/lib/formatters";
 import { getAirlineArabicName } from "@/lib/airlineLookup";
 import { buildGoogleFlightsUrl } from "@/lib/flightMapper";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { destinations } from "@/data/destinations";
 import "./Search.css";
 
 type SortBy = "price" | "duration" | "departure";
 
-const AIRPORT_LABELS: Record<string, string> = {
-  DAM: "دمشق",
-  ALP: "حلب",
-};
+const airportLookup = new Map(destinations.map(d => [d.airport_code, d]));
 
 const STATUS_MESSAGES = [
   { delay: 0, text: "جاري البحث في Google Flights..." },
@@ -208,16 +206,24 @@ export default function SearchPage() {
     requestAnimationFrame(() => setReady(true));
   }, []);
 
-  const localCity = AIRPORT_LABELS[airport] || "دمشق";
+  const localDest = airportLookup.get(airport);
+  const localCity = localDest?.city_ar || airport;
 
-  // Derive destination city from first flight result or code
+  // Derive destination city from first flight result or destinations data
   const destCity = useMemo(() => {
-    if (flights.length === 0) return "";
-    if (isFromLocal) {
-      return flights[0]?.arrivalDestination?.city_ar || flights[0]?.arrivalAirport.name || "";
+    if (flights.length > 0) {
+      if (isFromLocal) {
+        return flights[0]?.arrivalDestination?.city_ar || flights[0]?.arrivalAirport.name || "";
+      }
+      return flights[0]?.originDestination?.city_ar || flights[0]?.departureAirport.name || "";
     }
-    return flights[0]?.originDestination?.city_ar || flights[0]?.departureAirport.name || "";
-  }, [flights, isFromLocal]);
+    // Fallback to destinations data
+    if (destinationCode) {
+      const dest = airportLookup.get(destinationCode);
+      if (dest) return dest.city_ar;
+    }
+    return "";
+  }, [flights, isFromLocal, destinationCode]);
 
   // Filter and sort
   const filteredFlights = useMemo(() => {
