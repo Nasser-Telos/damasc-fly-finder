@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowRight, Search } from "lucide-react";
+import { ArrowRight, Plane } from "lucide-react";
 import { useDestinations } from "@/hooks/useFlights";
 import { useFlightCalendar } from "@/hooks/useFlightCalendar";
 import { normalizeArabic } from "@/lib/destinationFilter";
@@ -30,10 +30,9 @@ const Explore = () => {
   const [selectedDestination, setSelectedDestination] = useState<string | null>(
     () => searchParams.get("dest") || null
   );
-  const [pillQuery, setPillQuery] = useState("");
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [showCalendar, setShowCalendar] = useState(false);
   const [calMonth, setCalMonth] = useState(() => new Date());
+  const [showDestPicker, setShowDestPicker] = useState(false);
+  const [destQuery, setDestQuery] = useState("");
 
   const { data: allDestinations } = useDestinations();
 
@@ -57,35 +56,37 @@ const Explore = () => {
   // Reset selections when airport changes
   useEffect(() => {
     setSelectedDestination(null);
-    setPillQuery("");
   }, [code]);
 
-  // Filter destination pills by search query
-  const filteredPills = useMemo(() => {
-    if (!pillQuery)
-      return { pills: destinations, matchedCountry: null as string | null };
-    const q = pillQuery.toLowerCase();
-    const nq = normalizeArabic(pillQuery);
+  // Get selected destination label
+  const selectedDestLabel = useMemo(() => {
+    if (!selectedDestination) return null;
+    return destinations.find((d) => d.code === selectedDestination) || null;
+  }, [selectedDestination, destinations]);
 
-    const countryMatches = new Set<string>();
-    for (const d of destinations) {
-      if (normalizeArabic(d.country_ar).includes(nq)) {
-        countryMatches.add(d.country_ar);
-      }
-    }
-    const matchedCountry =
-      countryMatches.size === 1 ? Array.from(countryMatches)[0] : null;
-
-    const pills = destinations.filter(
+  // Filter destinations in picker
+  const filteredDestinations = useMemo(() => {
+    if (!destQuery) return destinations;
+    const nq = normalizeArabic(destQuery);
+    const q = destQuery.toLowerCase();
+    return destinations.filter(
       (d) =>
         normalizeArabic(d.name).includes(nq) ||
         normalizeArabic(d.airport_name_ar).includes(nq) ||
         normalizeArabic(d.country_ar).includes(nq) ||
         d.code.toLowerCase().includes(q)
     );
+  }, [destinations, destQuery]);
 
-    return { pills, matchedCountry };
-  }, [destinations, pillQuery]);
+  // Group filtered destinations by country for picker
+  const groupedDestinations = useMemo(() => {
+    const groups: Record<string, typeof destinations> = {};
+    for (const d of filteredDestinations) {
+      if (!groups[d.country_ar]) groups[d.country_ar] = [];
+      groups[d.country_ar].push(d);
+    }
+    return groups;
+  }, [filteredDestinations]);
 
   const today = useMemo(() => {
     const t = new Date();
@@ -93,13 +94,16 @@ const Explore = () => {
     return t;
   }, []);
 
-  // Calendar price params — fetch prices when calendar is open and a destination is selected
+  // Quick destination pills (top 8)
+  const quickPills = useMemo(() => destinations.slice(0, 8), [destinations]);
+
+  // Calendar price params — fetch when destination is selected
   const calendarParams = useMemo(() => {
     if (!selectedDestination) return null;
     const year = calMonth.getFullYear();
     const month = calMonth.getMonth();
     const lastDay = new Date(year, month + 1, 0);
-    const pad = (n: number) => String(n).padStart(2, '0');
+    const pad = (n: number) => String(n).padStart(2, "0");
     const outbound_date_start = `${year}-${pad(month + 1)}-01`;
     const outbound_date_end = `${year}-${pad(month + 1)}-${pad(lastDay.getDate())}`;
     return {
@@ -110,9 +114,27 @@ const Explore = () => {
     };
   }, [selectedDestination, code, calMonth]);
 
-  const { calendarMap, isLoading: calendarLoading, cheapestDate } = useFlightCalendar(
-    showCalendar ? calendarParams : null
-  );
+  const { calendarMap, isLoading: calendarLoading, cheapestDate } =
+    useFlightCalendar(calendarParams);
+
+  // Price tier thresholds (percentile-based)
+  const { p33, p66 } = useMemo(() => {
+    const prices = [...calendarMap.values()]
+      .map((e) => e.price)
+      .filter((p): p is number => p != null)
+      .sort((a, b) => a - b);
+    if (prices.length === 0) return { p33: 0, p66: 0 };
+    return {
+      p33: prices[Math.floor(prices.length * 0.33)],
+      p66: prices[Math.floor(prices.length * 0.66)],
+    };
+  }, [calendarMap]);
+
+  const getPriceTier = (price: number) => {
+    if (price <= p33) return "cheap";
+    if (price <= p66) return "mid";
+    return "expensive";
+  };
 
   const calDays = useMemo(() => {
     const year = calMonth.getFullYear();
@@ -128,38 +150,42 @@ const Explore = () => {
 
   const weekDayLabels = ["سب", "أح", "اث", "ثل", "أر", "خم", "جم"];
 
-  const handleSearch = () => {
+  const handleDateClick = (day: number) => {
     if (!selectedDestination) return;
-    const dateStr = selectedDate.toISOString().split("T")[0];
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const dateStr = `${calMonth.getFullYear()}-${pad(calMonth.getMonth() + 1)}-${pad(day)}`;
+    const entry = calendarMap.get(dateStr);
+    if (!entry?.price) return;
     const searchType = `from_${code === "ALP" ? "aleppo" : "damascus"}`;
-    const params = new URLSearchParams();
-    params.set("type", searchType);
-    params.set("airport", code);
-    params.set("destination", selectedDestination);
-    params.set("date", dateStr);
-    navigate(`/search?${params.toString()}`);
+    navigate(
+      `/search?type=${searchType}&airport=${code}&destination=${selectedDestination}&date=${dateStr}`
+    );
   };
 
-  const handleDateSelect = (date: Date) => {
-    setSelectedDate(date);
-    setShowCalendar(false);
+  const handleSelectDestination = (destCode: string) => {
+    setSelectedDestination(destCode);
+    setShowDestPicker(false);
+    setDestQuery("");
   };
 
-  // Lock body scroll when calendar modal is open
+  // Lock body scroll when picker is open
   useEffect(() => {
-    document.body.style.overflow = showCalendar ? "hidden" : "";
+    document.body.style.overflow = showDestPicker ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [showCalendar]);
+  }, [showDestPicker]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && showCalendar) setShowCalendar(false);
+      if (e.key === "Escape" && showDestPicker) {
+        setShowDestPicker(false);
+        setDestQuery("");
+      }
     };
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
-  }, [showCalendar]);
+  }, [showDestPicker]);
 
   return (
     <>
@@ -188,51 +214,58 @@ const Explore = () => {
           </div>
         </div>
 
-        {/* Destination search */}
-        <div className="explore-dest-search-wrap">
-          <input
-            value={pillQuery}
-            onChange={(e) => setPillQuery(e.target.value)}
-            placeholder="البحث عن وجهة أو دولة..."
-            className="explore-dest-search"
-          />
-          {pillQuery && (
-            <button
-              className="explore-dest-search-clear"
-              onClick={() => setPillQuery("")}
+        {/* Destination Route Field */}
+        <div className="explore-route-wrap">
+          <button
+            className="explore-route-field"
+            onClick={() => setShowDestPicker(true)}
+          >
+            <svg
+              className="explore-route-icon"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              viewBox="0 0 24 24"
             >
-              ✕
-            </button>
-          )}
+              <path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 00-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+            </svg>
+            <div className="explore-route-text">
+              <span className="explore-route-label">من</span>
+              <span
+                className="explore-route-value"
+                data-has-dest={selectedDestLabel ? "" : undefined}
+              >
+                {selectedDestLabel
+                  ? `${selectedDestLabel.airport_name_ar} (${selectedDestLabel.code})`
+                  : "اختر مطار المغادرة"}
+              </span>
+            </div>
+            <svg
+              className="explore-route-chevron"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
         </div>
 
-        {/* Country badge */}
-        {filteredPills.matchedCountry && (
-          <div className="explore-pills-country-badge">
-            {filteredPills.matchedCountry}
-            <span className="explore-pills-country-count">
-              — {filteredPills.pills.length}{" "}
-              {filteredPills.pills.length > 2
-                ? "مدن"
-                : filteredPills.pills.length === 2
-                  ? "وجهتان"
-                  : "وجهة"}
-            </span>
-          </div>
-        )}
-
-        {/* Destination pills */}
+        {/* Quick Destination Pills */}
         <div className="explore-pills-wrap">
           <div className="explore-pills">
-            {!pillQuery && (
-              <button
-                className={`explore-pill ${selectedDestination === null ? "explore-pill-on" : ""}`}
-                onClick={() => setSelectedDestination(null)}
-              >
-                جميع الوجهات
-              </button>
-            )}
-            {filteredPills.pills.map((d) => (
+            <button
+              className={`explore-pill ${selectedDestination === null ? "explore-pill-on" : ""}`}
+              onClick={() => setSelectedDestination(null)}
+            >
+              جميع
+            </button>
+            {quickPills.map((d) => (
               <button
                 key={d.code}
                 className={`explore-pill ${selectedDestination === d.code ? "explore-pill-on" : ""}`}
@@ -242,205 +275,24 @@ const Explore = () => {
                   )
                 }
               >
-                {d.airport_name_ar} ({d.code})
+                {d.name}{" "}
+                <span className="explore-pill-code">{d.code}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Date picker + Search CTA */}
-        <div
-          style={{
-            maxWidth: 600,
-            margin: "0 auto",
-            padding: "0 16px 20px",
-          }}
-        >
-          {/* Date selector */}
-          <button
-            className="explore-date-btn"
-            onClick={() => {
-              setCalMonth(
-                new Date(
-                  selectedDate.getFullYear(),
-                  selectedDate.getMonth(),
-                  1
-                )
-              );
-              setShowCalendar(true);
-            }}
-            style={{
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              padding: "14px 16px",
-              borderRadius: 14,
-              border: "1.5px solid hsl(var(--border))",
-              background: "hsl(var(--background))",
-              cursor: "pointer",
-              fontFamily: "inherit",
-              transition: "border-color 0.2s",
-              marginBottom: 12,
-            }}
-          >
-            <svg
-              width="20"
-              height="20"
-              fill="none"
-              stroke="hsl(215 16% 47%)"
-              strokeWidth="1.5"
-              viewBox="0 0 24 24"
-            >
-              <rect x="3" y="4" width="18" height="18" rx="2.5" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            <div style={{ textAlign: "right" }}>
-              <span
-                style={{
-                  display: "block",
-                  fontSize: 11,
-                  color: "hsl(215 16% 55%)",
-                  fontWeight: 500,
-                }}
-              >
-                تاريخ المغادرة
-              </span>
-              <span
-                style={{
-                  display: "block",
-                  fontSize: 15,
-                  fontWeight: 600,
-                  color: "hsl(var(--foreground))",
-                }}
-              >
-                {format(selectedDate, "d MMMM yyyy", { locale: ar })}
-              </span>
-            </div>
-          </button>
-
-          {/* Search CTA */}
-          <button
-            onClick={handleSearch}
-            disabled={!selectedDestination}
-            style={{
-              width: "100%",
-              height: 52,
-              borderRadius: 14,
-              border: "none",
-              background: selectedDestination
-                ? "hsl(var(--primary))"
-                : "hsl(var(--muted))",
-              color: selectedDestination
-                ? "#fff"
-                : "hsl(var(--muted-foreground))",
-              fontSize: 16,
-              fontWeight: 700,
-              cursor: selectedDestination ? "pointer" : "not-allowed",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              fontFamily: "inherit",
-              transition: "background 0.2s, color 0.2s",
-            }}
-          >
-            <Search className="h-5 w-5" />
-            {selectedDestination ? "البحث عن رحلات" : "اختر وجهة للبحث"}
-          </button>
-
-          {!selectedDestination && (
-            <p
-              style={{
-                textAlign: "center",
-                fontSize: 13,
-                color: "hsl(var(--muted-foreground))",
-                marginTop: 8,
-              }}
-            >
-              اختر وجهة من القائمة أعلاه ثم اختر التاريخ للبحث
-            </p>
-          )}
-        </div>
-
-        {/* Calendar Modal */}
-        {showCalendar && (
-          <div
-            className="syria-ov"
-            role="dialog"
-            aria-modal="true"
-            aria-label="اختيار التاريخ"
-            onClick={() => setShowCalendar(false)}
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.4)",
-              zIndex: 100,
-              display: "flex",
-              alignItems: "flex-end",
-              justifyContent: "center",
-            }}
-          >
-            <div
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                background: "hsl(var(--background))",
-                borderRadius: "20px 20px 0 0",
-                padding: "16px 16px 24px",
-                width: "100%",
-                maxWidth: 440,
-                maxHeight: "80vh",
-                overflow: "auto",
-              }}
-            >
-              <div
-                style={{
-                  width: 40,
-                  height: 4,
-                  borderRadius: 2,
-                  background: "hsl(var(--border))",
-                  margin: "0 auto 12px",
-                }}
-              />
-              <span
-                style={{
-                  display: "block",
-                  textAlign: "center",
-                  fontWeight: 700,
-                  fontSize: 16,
-                  marginBottom: 12,
-                }}
-              >
-                تاريخ المغادرة
-              </span>
-
-              {/* Month navigation */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "0 8px 8px",
-                }}
-              >
+        {/* Calendar Section */}
+        <div className="explore-calendar">
+          {selectedDestination ? (
+            <>
+              {/* Month Navigation */}
+              <div className="explore-cal-nav">
                 <button
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: "50%",
-                    border: "none",
-                    background: "hsl(var(--secondary))",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
+                  className="explore-cal-arrow"
                   onClick={() =>
                     setCalMonth(
-                      (m) =>
-                        new Date(m.getFullYear(), m.getMonth() - 1, 1)
+                      (m) => new Date(m.getFullYear(), m.getMonth() + 1, 1)
                     )
                   }
                 >
@@ -455,25 +307,14 @@ const Explore = () => {
                     <path d="M9 18l6-6-6-6" />
                   </svg>
                 </button>
-                <span style={{ fontWeight: 700, fontSize: 16 }}>
+                <span className="explore-cal-month">
                   {format(calMonth, "MMMM yyyy", { locale: ar })}
                 </span>
                 <button
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: "50%",
-                    border: "none",
-                    background: "hsl(var(--secondary))",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
+                  className="explore-cal-arrow"
                   onClick={() =>
                     setCalMonth(
-                      (m) =>
-                        new Date(m.getFullYear(), m.getMonth() + 1, 1)
+                      (m) => new Date(m.getFullYear(), m.getMonth() - 1, 1)
                     )
                   }
                 >
@@ -490,39 +331,17 @@ const Explore = () => {
                 </button>
               </div>
 
-              {/* Week day labels */}
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(7, 1fr)",
-                  gap: 2,
-                  marginBottom: 4,
-                }}
-              >
+              {/* Weekday Headers */}
+              <div className="explore-cal-grid explore-cal-header">
                 {weekDayLabels.map((d) => (
-                  <span
-                    key={d}
-                    style={{
-                      textAlign: "center",
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: "hsl(var(--muted-foreground))",
-                      padding: "6px 0",
-                    }}
-                  >
+                  <span key={d} className="explore-cal-dayname">
                     {d}
                   </span>
                 ))}
               </div>
 
-              {/* Calendar days */}
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(7, 1fr)",
-                  gap: 4,
-                }}
-              >
+              {/* Calendar Days Grid */}
+              <div className="explore-cal-grid">
                 {calDays.map((d, i) => {
                   if (d === null) return <span key={`e${i}`} />;
                   const date = new Date(
@@ -531,84 +350,184 @@ const Explore = () => {
                     d
                   );
                   const isPast = date.getTime() < today.getTime();
-                  const isSelected =
-                    date.getDate() === selectedDate.getDate() &&
-                    date.getMonth() === selectedDate.getMonth() &&
-                    date.getFullYear() === selectedDate.getFullYear();
                   const isToday = date.getTime() === today.getTime();
-                  const pad = (n: number) => String(n).padStart(2, '0');
+                  const pad = (n: number) => String(n).padStart(2, "0");
                   const dateStr = `${calMonth.getFullYear()}-${pad(calMonth.getMonth() + 1)}-${pad(d)}`;
                   const entry = calendarMap.get(dateStr);
                   const isCheapest = cheapestDate === dateStr;
                   const noFlights = entry?.has_no_flights === true;
                   const hasPrice = entry?.price != null;
+                  const tier = hasPrice ? getPriceTier(entry!.price!) : null;
+
+                  const cellClasses = [
+                    "explore-cal-cell",
+                    isPast && "explore-cal-past",
+                    noFlights && !isPast && "explore-cal-no-flights",
+                    isCheapest && !isPast && "explore-cal-cheapest",
+                    isToday && !isPast && "explore-cal-today",
+                    tier && !isPast && `explore-cal-${tier}`,
+                    !hasPrice && !isPast && !noFlights && "explore-cal-empty",
+                  ]
+                    .filter(Boolean)
+                    .join(" ");
+
                   return (
                     <button
                       key={d}
-                      disabled={isPast || noFlights}
-                      className={`explore-cal-cell-modal${isCheapest && !isSelected ? " explore-cal-cheapest" : ""}${noFlights ? " explore-cal-no-flights" : ""}`}
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        minHeight: 48,
-                        borderRadius: 10,
-                        border: isSelected
-                          ? "2px solid hsl(var(--primary))"
-                          : isCheapest && !isSelected
-                            ? "1.5px solid hsl(142 71% 60%)"
-                            : "none",
-                        background: isSelected
-                          ? "hsl(217 91% 95%)"
-                          : isCheapest && !isSelected
-                            ? "hsl(142 60% 93%)"
-                            : "transparent",
-                        color: isPast
-                          ? "hsl(var(--muted-foreground))"
-                          : "hsl(var(--foreground))",
-                        fontWeight: isToday || isSelected ? 700 : 500,
-                        fontSize: 14,
-                        cursor: isPast || noFlights ? "default" : "pointer",
-                        opacity: isPast ? 0.4 : noFlights ? 0.3 : 1,
-                        fontFamily: "inherit",
-                        textDecoration: isToday ? "underline" : "none",
-                        gap: 1,
-                        padding: "4px 2px",
-                      }}
-                      onClick={() => handleDateSelect(date)}
+                      className={cellClasses}
+                      disabled={isPast || noFlights || !hasPrice}
+                      onClick={() => handleDateClick(d)}
+                      style={{ animationDelay: `${i * 15}ms` }}
                     >
-                      {d}
-                      {!isPast && calendarParams && (
-                        calendarLoading ? (
-                          <span style={{
-                            fontSize: 9,
-                            color: "hsl(var(--muted-foreground))",
-                            lineHeight: 1,
-                            animation: "explore-cal-pulse 1.2s ease-in-out infinite",
-                          }}>...</span>
+                      <span
+                        className={`explore-cal-daynum${isToday ? " explore-cal-today-num" : ""}`}
+                      >
+                        {d}
+                      </span>
+                      {isToday && <span className="explore-cal-today-dot" />}
+                      {!isPast &&
+                        (calendarLoading ? (
+                          <span className="explore-cal-loading">...</span>
                         ) : hasPrice ? (
-                          <span style={{
-                            fontSize: 9,
-                            fontWeight: isCheapest ? 700 : 600,
-                            color: isSelected
-                              ? "hsl(217 91% 45%)"
-                              : isCheapest
-                                ? "hsl(142 71% 28%)"
-                                : "hsl(142 71% 35%)",
-                            lineHeight: 1,
-                            whiteSpace: "nowrap",
-                          }}>${entry!.price}</span>
-                        ) : null
-                      )}
+                          <span className="explore-cal-price">
+                            ${entry!.price}
+                          </span>
+                        ) : null)}
                     </button>
                   );
                 })}
               </div>
+
+              {/* Price Legend */}
+              {!calendarLoading && calendarMap.size > 0 && (
+                <div className="explore-cal-legend">
+                  <div className="explore-legend-item">
+                    <span className="explore-legend-dot explore-legend-cheap" />
+                    رخيص
+                  </div>
+                  <div className="explore-legend-item">
+                    <span className="explore-legend-dot explore-legend-mid" />
+                    متوسط
+                  </div>
+                  <div className="explore-legend-item">
+                    <span className="explore-legend-dot explore-legend-expensive" />
+                    مرتفع
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            /* Empty State */
+            <div className="explore-empty">
+              <svg
+                className="explore-empty-icon"
+                width="48"
+                height="48"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.2"
+                viewBox="0 0 24 24"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2.5" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              <p className="explore-empty-text">
+                اختر وجهة لعرض تقويم الأسعار
+              </p>
+              <p className="explore-empty-hint">
+                اضغط على حقل الوجهة أعلاه أو اختر من القائمة السريعة
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Destination Picker Bottom Sheet */}
+      {showDestPicker && (
+        <div
+          className="syria-ov"
+          dir="rtl"
+          role="dialog"
+          aria-modal="true"
+          aria-label="اختيار الوجهة"
+          onClick={() => {
+            setShowDestPicker(false);
+            setDestQuery("");
+          }}
+        >
+          <div className="syria-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="syria-sh-bar">
+              <div className="syria-sh-handle" />
+            </div>
+            <div className="syria-sh-head">
+              <input
+                autoFocus
+                value={destQuery}
+                onChange={(e) => setDestQuery(e.target.value)}
+                placeholder="البحث عن مدينة أو دولة..."
+                className="syria-sh-q"
+              />
+              <button
+                className="syria-sh-x"
+                onClick={() => {
+                  setShowDestPicker(false);
+                  setDestQuery("");
+                }}
+              >
+                إلغاء
+              </button>
+            </div>
+            <div className="syria-sh-body">
+              {filteredDestinations.length === 0 ? (
+                <div className="syria-sh-none">لا توجد نتائج</div>
+              ) : (
+                Object.entries(groupedDestinations).map(([country, dests]) => (
+                  <div key={country}>
+                    <div className="explore-picker-country">{country}</div>
+                    {dests.map((dest) => (
+                      <button
+                        key={dest.code}
+                        className={`syria-sh-row ${selectedDestination === dest.code ? "syria-sh-act" : ""}`}
+                        onClick={() => handleSelectDestination(dest.code)}
+                      >
+                        <div className="syria-sh-icon">
+                          <Plane
+                            className="h-5 w-5"
+                            style={{ color: "hsl(215 16% 47%)" }}
+                          />
+                        </div>
+                        <div className="syria-sh-col">
+                          <span className="syria-sh-n">
+                            {dest.airport_name_ar}
+                          </span>
+                          <span className="syria-sh-c">
+                            {dest.name} · {dest.country_ar}
+                          </span>
+                        </div>
+                        <span className="syria-sh-cd">{dest.code}</span>
+                        {selectedDestination === dest.code && (
+                          <svg
+                            width="18"
+                            height="18"
+                            fill="none"
+                            stroke="hsl(217 91% 60%)"
+                            strokeWidth="2.5"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M20 6L9 17l-5-5" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                ))
+              )}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </>
   );
 };
