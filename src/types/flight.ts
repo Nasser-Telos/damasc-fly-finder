@@ -125,6 +125,29 @@ export interface BookingOptionsRequest {
   outbound_date: string;
 }
 
+// Calendar API types
+export interface FlightCalendarRequest {
+  departure_id: string;
+  arrival_id: string;
+  outbound_date: string;
+  outbound_date_start?: string;
+  outbound_date_end?: string;
+  adults?: number;
+}
+
+export interface CalendarEntry {
+  departure: string;       // "YYYY-MM-DD"
+  price?: number;
+  has_no_flights: boolean;
+  is_lowest_price: boolean;
+}
+
+export interface CalendarSearchResult {
+  search_metadata: { id: string; status: string };
+  search_parameters: Record<string, unknown>;
+  calendar: CalendarEntry[];
+}
+
 // Client request to our CF function
 export interface FlightSearchRequest {
   departure_id: string;

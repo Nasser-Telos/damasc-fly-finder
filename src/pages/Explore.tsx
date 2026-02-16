@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, Search } from "lucide-react";
 import { useDestinations } from "@/hooks/useFlights";
+import { useFlightCalendar } from "@/hooks/useFlightCalendar";
 import { normalizeArabic } from "@/lib/destinationFilter";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -91,6 +92,27 @@ const Explore = () => {
     t.setHours(0, 0, 0, 0);
     return t;
   }, []);
+
+  // Calendar price params — fetch prices when calendar is open and a destination is selected
+  const calendarParams = useMemo(() => {
+    if (!selectedDestination) return null;
+    const year = calMonth.getFullYear();
+    const month = calMonth.getMonth();
+    const lastDay = new Date(year, month + 1, 0);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const outbound_date_start = `${year}-${pad(month + 1)}-01`;
+    const outbound_date_end = `${year}-${pad(month + 1)}-${pad(lastDay.getDate())}`;
+    return {
+      departure_id: selectedDestination,
+      arrival_id: code,
+      outbound_date_start,
+      outbound_date_end,
+    };
+  }, [selectedDestination, code, calMonth]);
+
+  const { calendarMap, isLoading: calendarLoading, cheapestDate } = useFlightCalendar(
+    showCalendar ? calendarParams : null
+  );
 
   const calDays = useMemo(() => {
     const year = calMonth.getFullYear();
@@ -514,32 +536,71 @@ const Explore = () => {
                     date.getMonth() === selectedDate.getMonth() &&
                     date.getFullYear() === selectedDate.getFullYear();
                   const isToday = date.getTime() === today.getTime();
+                  const pad = (n: number) => String(n).padStart(2, '0');
+                  const dateStr = `${calMonth.getFullYear()}-${pad(calMonth.getMonth() + 1)}-${pad(d)}`;
+                  const entry = calendarMap.get(dateStr);
+                  const isCheapest = cheapestDate === dateStr;
+                  const noFlights = entry?.has_no_flights === true;
+                  const hasPrice = entry?.price != null;
                   return (
                     <button
                       key={d}
-                      disabled={isPast}
+                      disabled={isPast || noFlights}
+                      className={`explore-cal-cell-modal${isCheapest && !isSelected ? " explore-cal-cheapest" : ""}${noFlights ? " explore-cal-no-flights" : ""}`}
                       style={{
-                        height: 44,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        minHeight: 48,
                         borderRadius: 10,
                         border: isSelected
                           ? "2px solid hsl(var(--primary))"
-                          : "none",
+                          : isCheapest && !isSelected
+                            ? "1.5px solid hsl(142 71% 60%)"
+                            : "none",
                         background: isSelected
                           ? "hsl(217 91% 95%)"
-                          : "transparent",
+                          : isCheapest && !isSelected
+                            ? "hsl(142 60% 93%)"
+                            : "transparent",
                         color: isPast
                           ? "hsl(var(--muted-foreground))"
                           : "hsl(var(--foreground))",
                         fontWeight: isToday || isSelected ? 700 : 500,
                         fontSize: 14,
-                        cursor: isPast ? "default" : "pointer",
-                        opacity: isPast ? 0.4 : 1,
+                        cursor: isPast || noFlights ? "default" : "pointer",
+                        opacity: isPast ? 0.4 : noFlights ? 0.3 : 1,
                         fontFamily: "inherit",
                         textDecoration: isToday ? "underline" : "none",
+                        gap: 1,
+                        padding: "4px 2px",
                       }}
                       onClick={() => handleDateSelect(date)}
                     >
                       {d}
+                      {!isPast && calendarParams && (
+                        calendarLoading ? (
+                          <span style={{
+                            fontSize: 9,
+                            color: "hsl(var(--muted-foreground))",
+                            lineHeight: 1,
+                            animation: "explore-cal-pulse 1.2s ease-in-out infinite",
+                          }}>...</span>
+                        ) : hasPrice ? (
+                          <span style={{
+                            fontSize: 9,
+                            fontWeight: isCheapest ? 700 : 600,
+                            color: isSelected
+                              ? "hsl(217 91% 45%)"
+                              : isCheapest
+                                ? "hsl(142 71% 28%)"
+                                : "hsl(142 71% 35%)",
+                            lineHeight: 1,
+                            whiteSpace: "nowrap",
+                          }}>${entry!.price}</span>
+                        ) : null
+                      )}
                     </button>
                   );
                 })}

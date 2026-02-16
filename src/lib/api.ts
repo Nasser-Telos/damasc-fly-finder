@@ -1,4 +1,4 @@
-import type { FlightSearchRequest, ApifySearchResult, BookingOption, BookingOptionsRequest } from '@/types/flight';
+import type { FlightSearchRequest, ApifySearchResult, BookingOption, BookingOptionsRequest, FlightCalendarRequest, CalendarSearchResult } from '@/types/flight';
 
 export class FlightSearchError extends Error {
   statusCode: number;
@@ -60,6 +60,31 @@ export async function searchFlights(
   }
 
   return EMPTY_RESULT;
+}
+
+export async function searchFlightCalendar(
+  params: FlightCalendarRequest,
+  signal?: AbortSignal
+): Promise<CalendarSearchResult> {
+  const res = await fetch('/api/calendar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+    signal,
+  });
+
+  if (!res.ok) {
+    let message = 'فشل تحميل أسعار التقويم';
+    try {
+      const err = await res.json();
+      if (err.error) message = err.error;
+    } catch {
+      // ignore parse error
+    }
+    throw new FlightSearchError(message, res.status);
+  }
+
+  return await res.json() as CalendarSearchResult;
 }
 
 export async function fetchBookingOptions(

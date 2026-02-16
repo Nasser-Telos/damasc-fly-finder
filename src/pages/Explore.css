@@ -528,6 +528,12 @@
   color: hsl(var(--primary));
 }
 
+/* ── CALENDAR MODAL PRICE STYLES ── */
+@keyframes explore-cal-pulse {
+  0%, 100% { opacity: .3; }
+  50% { opacity: .8; }
+}
+
 /* ── MOBILE ── */
 @media (max-width: 480px) {
   .explore-header { padding: 12px 16px; }
