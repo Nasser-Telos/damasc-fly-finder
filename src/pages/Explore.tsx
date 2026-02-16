@@ -3,6 +3,8 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, Plane } from "lucide-react";
 import { useDestinations } from "@/hooks/useFlights";
 import { useFlightCalendar } from "@/hooks/useFlightCalendar";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { formatPrice } from "@/lib/formatters";
 import { normalizeArabic } from "@/lib/destinationFilter";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -19,6 +21,7 @@ const Explore = () => {
   const navigate = useNavigate();
   const code = (airportCode || "DAM").toUpperCase();
   const airport = AIRPORT_LABELS[code] || AIRPORT_LABELS["DAM"];
+  const { currency } = useCurrency();
 
   const handleAirportSwitch = (newCode: string) => {
     if (newCode !== code) {
@@ -122,10 +125,11 @@ const Explore = () => {
       arrival_id: code,
       outbound_date_start,
       outbound_date_end,
+      currency,
     };
-  }, [selectedDestination, code, calMonth]);
+  }, [selectedDestination, code, calMonth, currency]);
 
-  const { calendarMap, isLoading: calendarLoading, cheapestDate } =
+  const { calendarMap, isLoading: calendarLoading, isError: calendarError, error: calendarErrorDetail, refetch: calendarRefetch, cheapestDate } =
     useFlightCalendar(calendarParams);
 
   // Price tier thresholds (percentile-based)
@@ -403,7 +407,7 @@ const Explore = () => {
                             <span className="explore-cal-loading">...</span>
                           ) : hasPrice ? (
                             <span className="explore-cal-price">
-                              ${entry!.price}
+                              {formatPrice(entry!.price!, currency)}
                             </span>
                           ) : null)}
                       </button>
@@ -414,6 +418,21 @@ const Explore = () => {
                   <div className="explore-cal-overlay">
                     <div className="explore-cal-spinner" />
                     <span className="explore-cal-overlay-text">جاري تحميل الأسعار...</span>
+                  </div>
+                )}
+                {calendarError && !calendarLoading && (
+                  <div className="explore-cal-overlay explore-cal-overlay-error">
+                    <span className="explore-cal-overlay-text" style={{ color: 'hsl(0 72% 51%)' }}>
+                      تعذّر تحميل الأسعار
+                    </span>
+                    {calendarErrorDetail?.message && (
+                      <span className="explore-cal-overlay-detail">
+                        {calendarErrorDetail.message}
+                      </span>
+                    )}
+                    <button className="explore-cal-retry-btn" onClick={() => calendarRefetch()}>
+                      إعادة المحاولة
+                    </button>
                   </div>
                 )}
               </div>

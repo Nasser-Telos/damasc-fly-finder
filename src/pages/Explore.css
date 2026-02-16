@@ -380,6 +380,35 @@
   color: hsl(var(--muted-foreground));
 }
 
+/* Error overlay */
+.explore-cal-overlay-error {
+  background: hsla(var(--background) / 0.85);
+}
+.explore-cal-overlay-detail {
+  font-size: 11px;
+  color: hsl(var(--muted-foreground));
+  max-width: 260px;
+  text-align: center;
+  line-height: 1.4;
+  word-break: break-word;
+}
+.explore-cal-retry-btn {
+  margin-top: 4px;
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: none;
+  background: hsl(var(--primary));
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.explore-cal-retry-btn:hover {
+  background: hsl(217 91% 55%);
+}
+
 /* ── PRICE TIERS ── */
 .explore-cal-cheap {
   background: hsl(142 60% 92%);

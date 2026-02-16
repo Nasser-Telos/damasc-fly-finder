@@ -6,6 +6,8 @@ import { ExploreDealsSection } from "@/components/flight/ExploreDealsSection";
 
 import type { Destination } from "@/types/flight";
 import { filterDestinations } from "@/lib/destinationFilter";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { CURRENCIES, type CurrencyCode } from "@/lib/currency";
 import { countryGeoMapping, DEFAULT_GEO } from "@/lib/geoMapping";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -30,6 +32,8 @@ const Index = () => {
   const [calMonth, setCalMonth] = useState(() => new Date());
 
   const { data: destinations } = useDestinations();
+  const { currency, setCurrency, symbol } = useCurrency();
+  const [currencyOpen, setCurrencyOpen] = useState(false);
 
   // Non-Syrian destinations (show all active, not just those with flights)
   const otherDestinations = useMemo(() => {
@@ -203,6 +207,65 @@ const Index = () => {
                   {tab === t.id && <span className="syria-nav-bar" />}
                 </button>
               ))}
+              <div className="syria-currency-wrap" style={{ position: 'relative', marginRight: 'auto' }}>
+                <button
+                  className="syria-currency-btn"
+                  onClick={e => { e.stopPropagation(); setCurrencyOpen(!currencyOpen); }}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 8,
+                    border: '1px solid hsl(215 20% 85%)',
+                    background: 'hsl(215 30% 97%)',
+                    fontSize: '0.8rem',
+                    fontWeight: 500,
+                    color: 'hsl(215 25% 30%)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  {symbol} {currency}
+                </button>
+                {currencyOpen && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: '100%',
+                      marginTop: 4,
+                      background: 'white',
+                      border: '1px solid hsl(215 20% 88%)',
+                      borderRadius: 10,
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.10)',
+                      zIndex: 100,
+                      minWidth: 170,
+                      overflow: 'hidden',
+                    }}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    {(Object.keys(CURRENCIES) as CurrencyCode[]).map(code => (
+                      <button
+                        key={code}
+                        style={{
+                          width: '100%',
+                          textAlign: 'right',
+                          padding: '8px 14px',
+                          fontSize: '0.82rem',
+                          border: 'none',
+                          background: currency === code ? 'hsl(215 30% 95%)' : 'transparent',
+                          fontWeight: currency === code ? 600 : 400,
+                          cursor: 'pointer',
+                          color: 'hsl(215 25% 20%)',
+                        }}
+                        onClick={() => { setCurrency(code); setCurrencyOpen(false); }}
+                      >
+                        {CURRENCIES[code].symbol} {code} — {CURRENCIES[code].label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </nav>
           </div>
         </header>

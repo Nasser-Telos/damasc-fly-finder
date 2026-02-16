@@ -36,6 +36,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     outbound_date_start?: string;
     outbound_date_end?: string;
     adults?: number;
+    currency?: string;
   };
   try {
     body = await request.json();
@@ -43,7 +44,9 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     return errorResponse('Invalid JSON body', 400);
   }
 
-  const { departure_id, arrival_id, outbound_date, outbound_date_start, outbound_date_end, adults = 1 } = body;
+  const { departure_id, arrival_id, outbound_date, outbound_date_start, outbound_date_end, adults = 1, currency } = body;
+  const ALLOWED_CURRENCIES = ['USD', 'AED', 'SAR'];
+  const safeCurrency = currency && ALLOWED_CURRENCIES.includes(currency) ? currency : 'USD';
 
   if (!departure_id || !/^[A-Z]{3}$/.test(departure_id)) {
     return errorResponse('Invalid departure_id: must be 3 uppercase letters', 400);
@@ -70,22 +73,30 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     if (outbound_date_start) url.searchParams.set('outbound_date_start', outbound_date_start);
     if (outbound_date_end) url.searchParams.set('outbound_date_end', outbound_date_end);
     url.searchParams.set('flight_type', 'one_way');
-    url.searchParams.set('currency', 'USD');
+    url.searchParams.set('currency', safeCurrency);
     url.searchParams.set('travel_class', 'economy');
     url.searchParams.set('adults', String(adults));
     url.searchParams.set('api_key', apiKey);
+
+    // Log outgoing URL (without API key)
+    const logUrl = new URL(url.toString());
+    logUrl.searchParams.delete('api_key');
+    console.log(`[calendar] Fetching: ${logUrl.toString()}`);
 
     const res = await fetch(url.toString());
 
     if (!res.ok) {
       const text = await res.text();
+      console.error(`[calendar] SearchAPI error ${res.status}: ${text}`);
       return errorResponse(`Search API error: ${text}`, 502);
     }
 
-    const data = await res.json();
+    const data = await res.json() as { calendar?: unknown[] };
+    console.log(`[calendar] Success: ${data.calendar?.length ?? 0} entries`);
     return jsonResponse(data);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
+    console.error(`[calendar] Exception: ${message}`);
     return errorResponse(`Search failed: ${message}`, 500);
   }
 };

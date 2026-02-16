@@ -123,6 +123,7 @@ export interface BookingOptionsRequest {
   departure_id: string;
   arrival_id: string;
   outbound_date: string;
+  currency?: string;
 }
 
 // Calendar API types
@@ -133,13 +134,14 @@ export interface FlightCalendarRequest {
   outbound_date_start?: string;
   outbound_date_end?: string;
   adults?: number;
+  currency?: string;
 }
 
 export interface CalendarEntry {
   departure: string;       // "YYYY-MM-DD"
   price?: number;
-  has_no_flights: boolean;
-  is_lowest_price: boolean;
+  has_no_flights?: boolean;
+  is_lowest_price?: boolean;
 }
 
 export interface CalendarSearchResult {
@@ -154,6 +156,7 @@ export interface FlightSearchRequest {
   arrival_id: string;
   outbound_date: string; // YYYY-MM-DD
   adults?: number;
+  currency?: string;
 }
 
 // Normalized flight for UI display

@@ -71,8 +71,9 @@ export function mapSearchResults(result: ApifySearchResult): LiveFlight[] {
 export function buildGoogleFlightsUrl(
   departureId: string,
   arrivalId: string,
-  date: string
+  date: string,
+  currency: string = 'USD'
 ): string {
   // date = "YYYY-MM-DD"
-  return `https://www.google.com/travel/flights?q=Flights+from+${departureId}+to+${arrivalId}+on+${date}&curr=USD`;
+  return `https://www.google.com/travel/flights?q=Flights+from+${departureId}+to+${arrivalId}+on+${date}&curr=${currency}`;
 }

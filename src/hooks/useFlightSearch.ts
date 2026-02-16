@@ -14,7 +14,7 @@ interface UseFlightSearchResult {
 
 export function useFlightSearch(params: FlightSearchRequest | null): UseFlightSearchResult {
   const { data, isLoading, isFetching, error, refetch } = useQuery({
-    queryKey: ['flight-search', params?.departure_id, params?.arrival_id, params?.outbound_date, params?.adults],
+    queryKey: ['flight-search', params?.departure_id, params?.arrival_id, params?.outbound_date, params?.adults, params?.currency],
     queryFn: async ({ signal }) => {
       if (!params) throw new Error('No search params');
       const result = await searchFlights(params, signal);

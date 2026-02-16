@@ -24,17 +24,15 @@ export function useBookingOptions() {
           opt.price < min.price ? opt : min, options[0]);
         window.open(buildBookingUrl(cheapest), '_blank');
       } else {
-        // No booking options — fallback to Google Flights
         window.open(
-          buildGoogleFlightsUrl(params.departure_id, params.arrival_id, params.outbound_date),
+          buildGoogleFlightsUrl(params.departure_id, params.arrival_id, params.outbound_date, params.currency),
           '_blank'
         );
       }
     },
     onError: (_error, params) => {
-      // API error — fallback to Google Flights
       window.open(
-        buildGoogleFlightsUrl(params.departure_id, params.arrival_id, params.outbound_date),
+        buildGoogleFlightsUrl(params.departure_id, params.arrival_id, params.outbound_date, params.currency),
         '_blank'
       );
     },

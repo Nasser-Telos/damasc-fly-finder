@@ -8,7 +8,13 @@ export function formatDuration(minutes: number): string {
   return `${hours}س ${mins}د`;
 }
 
-export function formatPrice(price: number | null): string {
+import type { CurrencyCode } from './currency';
+
+export function formatPrice(price: number | null, currency: CurrencyCode = 'USD'): string {
   if (!price) return "اتصل للسعر";
-  return `$${price.toLocaleString()}`;
+  const formatted = price.toLocaleString();
+  if (currency === 'USD') return `$${formatted}`;
+  if (currency === 'AED') return `${formatted} د.إ`;
+  if (currency === 'SAR') return `${formatted} ر.س`;
+  return `$${formatted}`;
 }

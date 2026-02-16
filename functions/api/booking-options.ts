@@ -29,14 +29,16 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     return errorResponse('Server misconfiguration: missing API key', 500);
   }
 
-  let body: { booking_token?: string; departure_id?: string; arrival_id?: string; outbound_date?: string };
+  let body: { booking_token?: string; departure_id?: string; arrival_id?: string; outbound_date?: string; currency?: string };
   try {
     body = await request.json();
   } catch {
     return errorResponse('Invalid JSON body', 400);
   }
 
-  const { booking_token, departure_id, arrival_id, outbound_date } = body;
+  const { booking_token, departure_id, arrival_id, outbound_date, currency } = body;
+  const ALLOWED_CURRENCIES = ['USD', 'AED', 'SAR'];
+  const safeCurrency = currency && ALLOWED_CURRENCIES.includes(currency) ? currency : 'USD';
 
   if (!booking_token) {
     return errorResponse('Missing booking_token', 400);
@@ -58,7 +60,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     url.searchParams.set('arrival_id', arrival_id);
     url.searchParams.set('outbound_date', outbound_date);
     url.searchParams.set('flight_type', 'one_way');
-    url.searchParams.set('currency', 'USD');
+    url.searchParams.set('currency', safeCurrency);
     url.searchParams.set('travel_class', 'economy');
     url.searchParams.set('booking_token', booking_token);
     url.searchParams.set('api_key', apiKey);

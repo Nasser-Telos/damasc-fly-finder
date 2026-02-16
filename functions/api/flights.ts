@@ -29,14 +29,16 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     return errorResponse('Server misconfiguration: missing API key', 500);
   }
 
-  let body: { departure_id?: string; arrival_id?: string; outbound_date?: string; adults?: number };
+  let body: { departure_id?: string; arrival_id?: string; outbound_date?: string; adults?: number; currency?: string };
   try {
     body = await request.json();
   } catch {
     return errorResponse('Invalid JSON body', 400);
   }
 
-  const { departure_id, arrival_id, outbound_date, adults = 1 } = body;
+  const { departure_id, arrival_id, outbound_date, adults = 1, currency } = body;
+  const ALLOWED_CURRENCIES = ['USD', 'AED', 'SAR'];
+  const safeCurrency = currency && ALLOWED_CURRENCIES.includes(currency) ? currency : 'USD';
 
   if (!departure_id || !/^[A-Z]{3}$/.test(departure_id)) {
     return errorResponse('Invalid departure_id: must be 3 uppercase letters', 400);
@@ -55,7 +57,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     url.searchParams.set('arrival_id', arrival_id);
     url.searchParams.set('outbound_date', outbound_date);
     url.searchParams.set('flight_type', 'one_way');
-    url.searchParams.set('currency', 'USD');
+    url.searchParams.set('currency', safeCurrency);
     url.searchParams.set('travel_class', 'economy');
     url.searchParams.set('adults', String(adults));
     url.searchParams.set('api_key', apiKey);

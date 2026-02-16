@@ -3,7 +3,9 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { ArrowRight, ArrowLeft, Plane, Clock, ExternalLink, ChevronUp, RefreshCw } from "lucide-react";
 import { useFlightSearch } from "@/hooks/useFlightSearch";
 import { useBookingOptions } from "@/hooks/useBookingOptions";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import type { LiveFlight, FlightSearchRequest } from "@/types/flight";
+import type { CurrencyCode } from "@/lib/currency";
 import { formatDuration, formatPrice } from "@/lib/formatters";
 import { getAirlineArabicName } from "@/lib/airlineLookup";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -18,7 +20,7 @@ const STATUS_MESSAGES = [
   { delay: 0, text: "جاري البحث عن رحلات..." },
 ];
 
-function SearchFlightCard({ flight, isCheapest, index = 0, onBookClick, isBooking }: { flight: LiveFlight; isCheapest?: boolean; index?: number; onBookClick: (flight: LiveFlight) => void; isBooking?: boolean }) {
+function SearchFlightCard({ flight, isCheapest, index = 0, onBookClick, isBooking, currency }: { flight: LiveFlight; isCheapest?: boolean; index?: number; onBookClick: (flight: LiveFlight) => void; isBooking?: boolean; currency?: CurrencyCode }) {
   const arabicName = getAirlineArabicName(flight.airlineCode);
   const departureId = flight.departureAirport.id;
   const arrivalId = flight.arrivalAirport.id;
@@ -103,7 +105,7 @@ function SearchFlightCard({ flight, isCheapest, index = 0, onBookClick, isBookin
       {/* Price & Book */}
       <div className="search-fc-bottom">
         <div>
-          <span className="search-fc-price">{formatPrice(flight.price)}</span>
+          <span className="search-fc-price">{formatPrice(flight.price, currency)}</span>
           <span className="search-fc-price-label">للشخص</span>
         </div>
         <button
@@ -122,6 +124,7 @@ function SearchFlightCard({ flight, isCheapest, index = 0, onBookClick, isBookin
 export default function SearchPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { currency } = useCurrency();
   const [ready, setReady] = useState(false);
   const searchTriggered = useRef(false);
 
@@ -153,8 +156,8 @@ export default function SearchPage() {
       arrival_id = airport;
     }
 
-    return { departure_id, arrival_id, outbound_date: outboundDate };
-  }, [airport, destinationCode, dateParam, isFromLocal, outboundDate]);
+    return { departure_id, arrival_id, outbound_date: outboundDate, currency };
+  }, [airport, destinationCode, dateParam, isFromLocal, outboundDate, currency]);
 
   const { flights, isSearching, error, search, totalFound } = useFlightSearch(apiParams);
 
@@ -170,6 +173,7 @@ export default function SearchPage() {
       departure_id: apiParams.departure_id,
       arrival_id: apiParams.arrival_id,
       outbound_date: apiParams.outbound_date,
+      currency,
     });
   }, [apiParams, fetchOptions]);
 
@@ -180,6 +184,15 @@ export default function SearchPage() {
       search();
     }
   }, [apiParams, search]);
+
+  // Re-trigger search when currency changes (if results already loaded)
+  const prevCurrency = useRef(currency);
+  useEffect(() => {
+    if (prevCurrency.current !== currency && searchTriggered.current && apiParams) {
+      prevCurrency.current = currency;
+      search();
+    }
+  }, [currency, apiParams, search]);
 
   // Progressive status messages
   const [statusIndex, setStatusIndex] = useState(0);
@@ -393,6 +406,7 @@ export default function SearchPage() {
               index={index}
               onBookClick={handleBookClick}
               isBooking={bookingLoading && bookingFlightId === flight.id}
+              currency={currency}
             />
           ))}
         </div>
