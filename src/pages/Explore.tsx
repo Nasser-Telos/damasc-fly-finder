@@ -28,7 +28,14 @@ const Explore = () => {
 
   const [ready, setReady] = useState(false);
   const [selectedDestination, setSelectedDestination] = useState<string | null>(
-    () => searchParams.get("dest") || null
+    () => {
+      const fromUrl = searchParams.get("dest");
+      if (fromUrl) return fromUrl;
+      const saved = localStorage.getItem("userAirport");
+      // Don't pre-select Syrian airports as destinations (they're the arrival)
+      if (saved && saved !== "DAM" && saved !== "ALP") return saved;
+      return null;
+    }
   );
   const [calMonth, setCalMonth] = useState(() => new Date());
   const [showDestPicker, setShowDestPicker] = useState(false);
@@ -93,6 +100,10 @@ const Explore = () => {
     t.setHours(0, 0, 0, 0);
     return t;
   }, []);
+
+  // Prevent navigating to past months
+  const canGoPrev = calMonth.getFullYear() > today.getFullYear() ||
+    (calMonth.getFullYear() === today.getFullYear() && calMonth.getMonth() > today.getMonth());
 
   // Quick destination pills (top 8)
   const quickPills = useMemo(() => destinations.slice(0, 8), [destinations]);
@@ -312,6 +323,7 @@ const Explore = () => {
                 </span>
                 <button
                   className="explore-cal-arrow"
+                  disabled={!canGoPrev}
                   onClick={() =>
                     setCalMonth(
                       (m) => new Date(m.getFullYear(), m.getMonth() - 1, 1)
@@ -341,61 +353,69 @@ const Explore = () => {
               </div>
 
               {/* Calendar Days Grid */}
-              <div className="explore-cal-grid">
-                {calDays.map((d, i) => {
-                  if (d === null) return <span key={`e${i}`} />;
-                  const date = new Date(
-                    calMonth.getFullYear(),
-                    calMonth.getMonth(),
-                    d
-                  );
-                  const isPast = date.getTime() < today.getTime();
-                  const isToday = date.getTime() === today.getTime();
-                  const pad = (n: number) => String(n).padStart(2, "0");
-                  const dateStr = `${calMonth.getFullYear()}-${pad(calMonth.getMonth() + 1)}-${pad(d)}`;
-                  const entry = calendarMap.get(dateStr);
-                  const isCheapest = cheapestDate === dateStr;
-                  const noFlights = entry?.has_no_flights === true;
-                  const hasPrice = entry?.price != null;
-                  const tier = hasPrice ? getPriceTier(entry!.price!) : null;
+              <div className="explore-cal-grid-wrap">
+                <div className="explore-cal-grid">
+                  {calDays.map((d, i) => {
+                    if (d === null) return <span key={`e${i}`} />;
+                    const date = new Date(
+                      calMonth.getFullYear(),
+                      calMonth.getMonth(),
+                      d
+                    );
+                    const isPast = date.getTime() < today.getTime();
+                    const isToday = date.getTime() === today.getTime();
+                    const pad = (n: number) => String(n).padStart(2, "0");
+                    const dateStr = `${calMonth.getFullYear()}-${pad(calMonth.getMonth() + 1)}-${pad(d)}`;
+                    const entry = calendarMap.get(dateStr);
+                    const isCheapest = cheapestDate === dateStr;
+                    const noFlights = entry?.has_no_flights === true;
+                    const hasPrice = entry?.price != null;
+                    const tier = hasPrice ? getPriceTier(entry!.price!) : null;
 
-                  const cellClasses = [
-                    "explore-cal-cell",
-                    isPast && "explore-cal-past",
-                    noFlights && !isPast && "explore-cal-no-flights",
-                    isCheapest && !isPast && "explore-cal-cheapest",
-                    isToday && !isPast && "explore-cal-today",
-                    tier && !isPast && `explore-cal-${tier}`,
-                    !hasPrice && !isPast && !noFlights && "explore-cal-empty",
-                  ]
-                    .filter(Boolean)
-                    .join(" ");
+                    const cellClasses = [
+                      "explore-cal-cell",
+                      isPast && "explore-cal-past",
+                      noFlights && !isPast && "explore-cal-no-flights",
+                      isCheapest && !isPast && "explore-cal-cheapest",
+                      isToday && !isPast && "explore-cal-today",
+                      tier && !isPast && `explore-cal-${tier}`,
+                      !hasPrice && !isPast && !noFlights && "explore-cal-empty",
+                    ]
+                      .filter(Boolean)
+                      .join(" ");
 
-                  return (
-                    <button
-                      key={d}
-                      className={cellClasses}
-                      disabled={isPast || noFlights || !hasPrice}
-                      onClick={() => handleDateClick(d)}
-                      style={{ animationDelay: `${i * 15}ms` }}
-                    >
-                      <span
-                        className={`explore-cal-daynum${isToday ? " explore-cal-today-num" : ""}`}
+                    return (
+                      <button
+                        key={d}
+                        className={cellClasses}
+                        disabled={isPast || noFlights || !hasPrice}
+                        onClick={() => handleDateClick(d)}
+                        style={{ animationDelay: `${i * 15}ms` }}
                       >
-                        {d}
-                      </span>
-                      {isToday && <span className="explore-cal-today-dot" />}
-                      {!isPast &&
-                        (calendarLoading ? (
-                          <span className="explore-cal-loading">...</span>
-                        ) : hasPrice ? (
-                          <span className="explore-cal-price">
-                            ${entry!.price}
-                          </span>
-                        ) : null)}
-                    </button>
-                  );
-                })}
+                        <span
+                          className={`explore-cal-daynum${isToday ? " explore-cal-today-num" : ""}`}
+                        >
+                          {d}
+                        </span>
+                        {isToday && <span className="explore-cal-today-dot" />}
+                        {!isPast &&
+                          (calendarLoading ? (
+                            <span className="explore-cal-loading">...</span>
+                          ) : hasPrice ? (
+                            <span className="explore-cal-price">
+                              ${entry!.price}
+                            </span>
+                          ) : null)}
+                      </button>
+                    );
+                  })}
+                </div>
+                {calendarLoading && (
+                  <div className="explore-cal-overlay">
+                    <div className="explore-cal-spinner" />
+                    <span className="explore-cal-overlay-text">جاري تحميل الأسعار...</span>
+                  </div>
+                )}
               </div>
 
               {/* Price Legend */}

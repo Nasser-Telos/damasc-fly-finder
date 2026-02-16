@@ -59,7 +59,7 @@ export function ExploreDealsSection({ navigate, userLocation, userCityName, isDe
             key={a.code}
             className="syria-explore-row"
             style={{ animationDelay: `${delay}ms` }}
-            onClick={() => navigate(`/explore/${a.code}`)}
+            onClick={() => navigate(`/explore/${a.code}${userLocation && !SYRIAN_CODES.includes(userLocation) ? `?dest=${userLocation}` : ''}`)}
           >
             <div className="syria-explore-avi">
               <svg width="20" height="20" fill="none" stroke="hsl(217 91% 50%)" strokeWidth="1.5" viewBox="0 0 24 24">

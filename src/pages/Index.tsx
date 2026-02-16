@@ -51,12 +51,15 @@ const Index = () => {
     const applyCountry = (countryCode: string | null) => {
       if (countryCode === 'SY') {
         setUserLocation(DEFAULT_GEO.airportCode);
+        localStorage.setItem('userAirport', DEFAULT_GEO.airportCode);
         setDir('from');
       } else if (countryCode && countryGeoMapping[countryCode]) {
         const geo = countryGeoMapping[countryCode];
         setUserLocation(geo.airportCode);
+        localStorage.setItem('userAirport', geo.airportCode);
       } else {
         setUserLocation(DEFAULT_GEO.airportCode);
+        localStorage.setItem('userAirport', DEFAULT_GEO.airportCode);
       }
     };
 
@@ -149,6 +152,7 @@ const Index = () => {
 
   const handleSelectCity = (dest: Destination) => {
     setUserLocation(dest.airport_code);
+    localStorage.setItem('userAirport', dest.airport_code);
     setUserCityNameDirect(dest.airport_name_ar);
     setPicker(false);
     setQ('');
