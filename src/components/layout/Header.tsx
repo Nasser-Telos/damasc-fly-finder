@@ -2,14 +2,11 @@ import { Link, useLocation } from "react-router-dom";
 import { Plane, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { useCurrency } from "@/contexts/CurrencyContext";
-import { CURRENCIES, type CurrencyCode } from "@/lib/currency";
+import { CurrencySelector } from "@/components/CurrencySelector";
 
 export function Header() {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [currencyOpen, setCurrencyOpen] = useState(false);
-  const { currency, setCurrency, symbol } = useCurrency();
 
   const navLinks = [
     { href: "/", label: "الرئيسية" },
@@ -44,29 +41,7 @@ export function Header() {
               <Link to={link.href}>{link.label}</Link>
             </Button>
           ))}
-          <div className="relative mr-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrencyOpen(!currencyOpen)}
-              className="text-xs gap-1"
-            >
-              {symbol} {currency}
-            </Button>
-            {currencyOpen && (
-              <div className="absolute left-0 top-full mt-1 bg-background border rounded-md shadow-lg z-50 min-w-[160px]">
-                {(Object.keys(CURRENCIES) as CurrencyCode[]).map((code) => (
-                  <button
-                    key={code}
-                    className={`w-full text-right px-3 py-2 text-sm hover:bg-muted transition-colors ${currency === code ? 'bg-muted font-medium' : ''}`}
-                    onClick={() => { setCurrency(code); setCurrencyOpen(false); }}
-                  >
-                    {CURRENCIES[code].symbol} {code} — {CURRENCIES[code].label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <CurrencySelector variant="desktop" className="mr-2" />
         </nav>
 
         {/* Mobile Menu Button */}
@@ -95,18 +70,11 @@ export function Header() {
                 <Link to={link.href}>{link.label}</Link>
               </Button>
             ))}
-            <div className="flex gap-1 pt-2 border-t mt-1">
-              {(Object.keys(CURRENCIES) as CurrencyCode[]).map((code) => (
-                <Button
-                  key={code}
-                  variant={currency === code ? "secondary" : "outline"}
-                  size="sm"
-                  className="flex-1 text-xs"
-                  onClick={() => { setCurrency(code); setMobileMenuOpen(false); }}
-                >
-                  {CURRENCIES[code].symbol} {code}
-                </Button>
-              ))}
+            <div className="pt-2 border-t mt-1">
+              <CurrencySelector
+                variant="mobile"
+                onCurrencyChange={() => setMobileMenuOpen(false)}
+              />
             </div>
           </div>
         </nav>
