@@ -118,7 +118,15 @@ const Explore = () => {
     const month = calMonth.getMonth();
     const lastDay = new Date(year, month + 1, 0);
     const pad = (n: number) => String(n).padStart(2, "0");
-    const outbound_date_start = `${year}-${pad(month + 1)}-01`;
+
+    // Clamp start date to today if viewing the current month
+    const todayYear = today.getFullYear();
+    const todayMonth = today.getMonth();
+    const startDay = (year === todayYear && month === todayMonth)
+      ? today.getDate()
+      : 1;
+
+    const outbound_date_start = `${year}-${pad(month + 1)}-${pad(startDay)}`;
     const outbound_date_end = `${year}-${pad(month + 1)}-${pad(lastDay.getDate())}`;
     return {
       departure_id: selectedDestination,
@@ -127,7 +135,7 @@ const Explore = () => {
       outbound_date_end,
       currency,
     };
-  }, [selectedDestination, code, calMonth, currency]);
+  }, [selectedDestination, code, calMonth, currency, today]);
 
   const { calendarMap, isLoading: calendarLoading, isError: calendarError, error: calendarErrorDetail, refetch: calendarRefetch, cheapestDate } =
     useFlightCalendar(calendarParams);
