@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { searchFlights } from '@/lib/api';
-import { mapSearchResults } from '@/lib/flightMapper';
-import type { FlightSearchRequest, LiveFlight, ApifySearchResult } from '@/types/flight';
+import { mapDuffelOffers } from '@/lib/flightMapper';
+import type { FlightSearchRequest, LiveFlight } from '@/types/flight';
 
 interface UseFlightSearchResult {
   flights: LiveFlight[];
@@ -9,7 +9,6 @@ interface UseFlightSearchResult {
   error: Error | null;
   search: () => void;
   totalFound: number;
-  priceInsights: ApifySearchResult['price_insights'] | null;
 }
 
 export function useFlightSearch(params: FlightSearchRequest | null): UseFlightSearchResult {
@@ -18,10 +17,10 @@ export function useFlightSearch(params: FlightSearchRequest | null): UseFlightSe
     queryFn: async ({ signal }) => {
       if (!params) throw new Error('No search params');
       const result = await searchFlights(params, signal);
+      const flights = mapDuffelOffers(result);
       return {
-        flights: mapSearchResults(result),
-        totalFound: result.search_metadata?.total_flights_found ?? 0,
-        priceInsights: result.price_insights ?? null,
+        flights,
+        totalFound: result.data?.offers?.length ?? 0,
       };
     },
     enabled: false,
@@ -35,6 +34,5 @@ export function useFlightSearch(params: FlightSearchRequest | null): UseFlightSe
     error: error as Error | null,
     search: () => { if (params) refetch(); },
     totalFound: data?.totalFound ?? 0,
-    priceInsights: data?.priceInsights ?? null,
   };
 }

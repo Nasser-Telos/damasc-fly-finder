@@ -1,4 +1,4 @@
-import type { FlightSearchRequest, ApifySearchResult, BookingOption, BookingOptionsRequest, FlightCalendarRequest, CalendarSearchResult } from '@/types/flight';
+import type { FlightSearchRequest, DuffelOfferResponse, BookingOptionsRequest, FlightCalendarRequest, CreateOrderRequest } from '@/types/flight';
 
 export class FlightSearchError extends Error {
   statusCode: number;
@@ -10,25 +10,10 @@ export class FlightSearchError extends Error {
   }
 }
 
-const EMPTY_RESULT: ApifySearchResult = {
-  search_parameters: {
-    departure_id: '',
-    arrival_id: '',
-    outbound_date: '',
-    adults: 1,
-    children: 0,
-    infants: 0,
-    currency: 'USD',
-  },
-  search_metadata: { total_flights_found: 0, status: 'complete' },
-  best_flights: [],
-  other_flights: [],
-};
-
 export async function searchFlights(
   params: FlightSearchRequest,
   signal?: AbortSignal
-): Promise<ApifySearchResult> {
+): Promise<DuffelOfferResponse> {
   const res = await fetch('/api/flights', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -47,25 +32,13 @@ export async function searchFlights(
     throw new FlightSearchError(message, res.status);
   }
 
-  const data = await res.json();
-
-  // SearchAPI.io returns the object directly (not wrapped in an array)
-  if (data && data.best_flights) {
-    return data as ApifySearchResult;
-  }
-
-  // Fallback: Apify-style array wrapper (backwards compat)
-  if (Array.isArray(data) && data.length > 0) {
-    return data[0] as ApifySearchResult;
-  }
-
-  return EMPTY_RESULT;
+  return await res.json() as DuffelOfferResponse;
 }
 
 export async function searchFlightCalendar(
   params: FlightCalendarRequest,
   signal?: AbortSignal
-): Promise<CalendarSearchResult> {
+): Promise<{ calendar: { departure: string; price?: number; has_no_flights?: boolean; is_lowest_price?: boolean }[] }> {
   const res = await fetch('/api/calendar', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -84,13 +57,13 @@ export async function searchFlightCalendar(
     throw new FlightSearchError(message, res.status);
   }
 
-  return await res.json() as CalendarSearchResult;
+  return await res.json();
 }
 
 export async function fetchBookingOptions(
   params: BookingOptionsRequest,
   signal?: AbortSignal
-): Promise<BookingOption[]> {
+): Promise<{ offer: Record<string, unknown>; google_flights_url: string }> {
   const res = await fetch('/api/booking-options', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -99,7 +72,32 @@ export async function fetchBookingOptions(
   });
 
   if (!res.ok) {
-    let message = 'فشل تحميل خيارات الحجز';
+    let message = 'فشل تحميل تفاصيل العرض';
+    try {
+      const err = await res.json();
+      if (err.error) message = err.error;
+    } catch {
+      // ignore parse error
+    }
+    throw new FlightSearchError(message, res.status);
+  }
+
+  return await res.json();
+}
+
+export async function fetchOfferById(
+  offerId: string,
+  signal?: AbortSignal
+): Promise<Record<string, unknown>> {
+  const res = await fetch('/api/booking-options', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ offer_id: offerId }),
+    signal,
+  });
+
+  if (!res.ok) {
+    let message = 'فشل تحميل تفاصيل العرض';
     try {
       const err = await res.json();
       if (err.error) message = err.error;
@@ -110,5 +108,28 @@ export async function fetchBookingOptions(
   }
 
   const data = await res.json();
-  return (data.booking_options ?? []) as BookingOption[];
+  return data.offer;
+}
+
+export async function createBooking(
+  params: CreateOrderRequest
+): Promise<{ order_id: string; booking_reference: string; status: string }> {
+  const res = await fetch('/api/book', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+
+  if (!res.ok) {
+    let message = 'فشل إنشاء الحجز';
+    try {
+      const err = await res.json();
+      if (err.error) message = err.error;
+    } catch {
+      // ignore parse error
+    }
+    throw new FlightSearchError(message, res.status);
+  }
+
+  return await res.json();
 }

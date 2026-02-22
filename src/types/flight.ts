@@ -40,9 +40,8 @@ export interface FlightFilters {
   sortBy: 'price' | 'duration' | 'departure';
 }
 
-// Apify response types
-
-export interface ApifyFlightLeg {
+// Duffel segment leg — maps to UI display (same shape as old ApifyFlightLeg)
+export interface DuffelSegmentLeg {
   departure_airport: { name: string; id: string; time: string };
   arrival_airport: { name: string; id: string; time: string };
   duration: number;
@@ -51,75 +50,107 @@ export interface ApifyFlightLeg {
   airline_logo: string;
   travel_class: string;
   flight_number: string;
-  legroom?: string;
-  extensions?: string[];
-  often_delayed_by_over_30_min?: boolean;
 }
 
-export interface ApifyLayover {
+export interface DuffelLayover {
   duration: number;
   name: string;
   id: string;
-  overnight?: boolean;
 }
 
-export interface ApifyFlightOption {
-  flights: ApifyFlightLeg[];
-  layovers?: ApifyLayover[];
-  total_duration: number;
-  price: number;
-  type: string;
-  airline_logo: string;
-  booking_token: string;
-  carbon_emissions?: {
-    this_flight?: number;
-    typical_for_this_route?: number;
-    difference_percent?: number;
+// Raw Duffel API response shape (for the mapper)
+export interface DuffelOfferResponse {
+  data: {
+    id: string;
+    offers: DuffelOffer[];
+    slices: DuffelRequestSlice[];
   };
 }
 
-export interface ApifySearchResult {
-  search_parameters: {
-    departure_id: string;
-    arrival_id: string;
-    outbound_date: string;
-    adults: number;
-    children: number;
-    infants: number;
-    currency: string;
-  };
-  search_metadata: {
-    total_flights_found: number;
-    status: string;
-  };
-  best_flights: ApifyFlightOption[];
-  other_flights: ApifyFlightOption[];
-  price_insights?: {
-    lowest_price: number;
-    price_level: string;
-  };
+export interface DuffelRequestSlice {
+  origin: { iata_code: string; name: string };
+  destination: { iata_code: string; name: string };
 }
 
-// Booking option types (from SearchAPI.io booking_token lookup)
-
-export interface BookingRequest {
-  url: string;
-  post_data: string;
+export interface DuffelOffer {
+  id: string;
+  total_amount: string;
+  total_currency: string;
+  tax_amount: string | null;
+  tax_currency: string | null;
+  base_amount: string | null;
+  base_currency: string | null;
+  owner: {
+    iata_code: string;
+    name: string;
+    logo_symbol_url: string | null;
+    logo_lockup_url: string | null;
+  };
+  slices: DuffelSlice[];
+  passengers: { id: string; type: string }[];
+  conditions: {
+    refund_before_departure: { allowed: boolean; penalty_amount?: string; penalty_currency?: string } | null;
+    change_before_departure: { allowed: boolean; penalty_amount?: string; penalty_currency?: string } | null;
+  };
+  total_emissions_kg?: string;
+  expires_at: string;
 }
 
-export interface BookingOption {
-  book_with: string;
-  airline?: boolean;
-  airline_logos?: string[];
-  price: number;
-  option_title?: string;
-  extensions?: string[];
-  baggage_prices?: string[];
-  booking_request: BookingRequest;
+export interface DuffelSlice {
+  id: string;
+  duration: string; // ISO 8601 e.g. "PT2H26M"
+  origin: { iata_code: string; name: string; city_name: string };
+  destination: { iata_code: string; name: string; city_name: string };
+  segments: DuffelSegment[];
+  fare_brand_name: string | null;
+}
+
+export interface DuffelSegment {
+  id: string;
+  origin: { iata_code: string; name: string };
+  destination: { iata_code: string; name: string };
+  departing_at: string; // ISO datetime
+  arriving_at: string;
+  duration: string; // ISO 8601
+  operating_carrier: {
+    iata_code: string;
+    name: string;
+    logo_symbol_url: string | null;
+    logo_lockup_url: string | null;
+  };
+  marketing_carrier: {
+    iata_code: string;
+    name: string;
+    logo_symbol_url: string | null;
+    logo_lockup_url: string | null;
+  };
+  operating_carrier_flight_number: string;
+  marketing_carrier_flight_number: string;
+  aircraft: { name: string } | null;
+  passengers: {
+    cabin_class: string;
+    cabin_class_marketing_name: string;
+  }[];
+}
+
+// Booking types
+export interface BookingPassenger {
+  given_name: string;
+  family_name: string;
+  born_on: string; // YYYY-MM-DD
+  email: string;
+  phone_number: string;
+  gender: 'm' | 'f';
+  title: 'mr' | 'ms' | 'mrs';
+}
+
+export interface CreateOrderRequest {
+  offer_id: string;
+  passengers: BookingPassenger[];
 }
 
 export interface BookingOptionsRequest {
-  booking_token: string;
+  offer_id: string;
   departure_id: string;
   arrival_id: string;
   outbound_date: string;
@@ -144,12 +175,6 @@ export interface CalendarEntry {
   is_lowest_price?: boolean;
 }
 
-export interface CalendarSearchResult {
-  search_metadata: { id: string; status: string };
-  search_parameters: Record<string, unknown>;
-  calendar: CalendarEntry[];
-}
-
 // Client request to our CF function
 export interface FlightSearchRequest {
   departure_id: string;
@@ -162,10 +187,11 @@ export interface FlightSearchRequest {
 // Normalized flight for UI display
 export interface LiveFlight {
   id: string;
-  flightLegs: ApifyFlightLeg[];
-  layovers?: ApifyLayover[];
+  flightLegs: DuffelSegmentLeg[];
+  layovers?: DuffelLayover[];
   totalDuration: number;
   price: number;
+  currency: string;
   stops: number;
   departureTime: string;
   arrivalTime: string;
@@ -175,8 +201,11 @@ export interface LiveFlight {
   airlineLogo: string;
   airlineCode: string;
   flightNumber: string;
-  bookingToken: string;
+  offerId: string;
   isBest: boolean;
+  fareBrandName?: string;
+  conditions?: DuffelOffer['conditions'];
+  totalEmissionsKg?: number;
   originDestination?: Destination;
   arrivalDestination?: Destination;
 }

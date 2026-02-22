@@ -10,11 +10,31 @@ export function formatDuration(minutes: number): string {
 
 import type { CurrencyCode } from './currency';
 
-export function formatPrice(price: number | null, currency: CurrencyCode = 'USD'): string {
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: '$',
+  AED: 'د.إ',
+  SAR: 'ر.س',
+  GBP: '£',
+  EUR: '€',
+  TRY: '₺',
+  EGP: 'ج.م',
+  JOD: 'د.أ',
+  KWD: 'د.ك',
+  QAR: 'ر.ق',
+  BHD: 'د.ب',
+  OMR: 'ر.ع',
+};
+
+export function formatPrice(price: number | null, currency: CurrencyCode | string = 'USD'): string {
   if (!price) return "اتصل للسعر";
   const formatted = price.toLocaleString();
-  if (currency === 'USD') return `$${formatted}`;
-  if (currency === 'AED') return `${formatted} د.إ`;
-  if (currency === 'SAR') return `${formatted} ر.س`;
-  return `$${formatted}`;
+  const symbol = CURRENCY_SYMBOLS[currency];
+  if (symbol) {
+    // Put symbol before for $ £ €, after for Arabic currencies
+    if (['$', '£', '€', '₺'].includes(symbol)) {
+      return `${symbol}${formatted}`;
+    }
+    return `${formatted} ${symbol}`;
+  }
+  return `${formatted} ${currency}`;
 }

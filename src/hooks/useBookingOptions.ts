@@ -1,33 +1,19 @@
 import { useMutation } from '@tanstack/react-query';
 import { fetchBookingOptions } from '@/lib/api';
-import type { BookingOption, BookingOptionsRequest } from '@/types/flight';
+import type { BookingOptionsRequest } from '@/types/flight';
 import { buildGoogleFlightsUrl } from '@/lib/flightMapper';
-
-function buildBookingUrl(option: BookingOption): string {
-  const { url, post_data } = option.booking_request;
-  if (post_data) {
-    return `${url}?${post_data}`;
-  }
-  return url;
-}
 
 export function useBookingOptions() {
   const { mutate, isPending, reset } = useMutation<
-    BookingOption[],
+    { offer: Record<string, unknown>; google_flights_url: string },
     Error,
     BookingOptionsRequest
   >({
     mutationFn: (params) => fetchBookingOptions(params),
-    onSuccess: (options, params) => {
-      if (options.length > 0) {
-        const cheapest = options.reduce((min, opt) =>
-          opt.price < min.price ? opt : min, options[0]);
-        window.open(buildBookingUrl(cheapest), '_blank');
-      } else {
-        window.open(
-          buildGoogleFlightsUrl(params.departure_id, params.arrival_id, params.outbound_date, params.currency),
-          '_blank'
-        );
+    onSuccess: (data) => {
+      // Open Google Flights as fallback (in the future, navigate to booking page)
+      if (data.google_flights_url) {
+        window.open(data.google_flights_url, '_blank');
       }
     },
     onError: (_error, params) => {
