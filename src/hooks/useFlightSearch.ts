@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { searchFlights } from '@/lib/api';
-import { mapDuffelOffers } from '@/lib/flightMapper';
+import { mapAmadeusOffers } from '@/lib/flightMapper';
 import type { FlightSearchRequest, LiveFlight } from '@/types/flight';
 
 interface UseFlightSearchResult {
@@ -17,10 +17,10 @@ export function useFlightSearch(params: FlightSearchRequest | null): UseFlightSe
     queryFn: async ({ signal }) => {
       if (!params) throw new Error('No search params');
       const result = await searchFlights(params, signal);
-      const flights = mapDuffelOffers(result);
+      const flights = mapAmadeusOffers(result);
       return {
         flights,
-        totalFound: result.data?.offers?.length ?? 0,
+        totalFound: result.data?.length ?? 0,
       };
     },
     enabled: false,

@@ -1,4 +1,4 @@
-import type { DuffelOfferResponse, DuffelOffer, DuffelSegmentLeg, DuffelLayover, LiveFlight, Destination } from '@/types/flight';
+import type { AmadeusSearchResponse, AmadeusFlightOffer, FlightLeg, FlightLayover, LiveFlight, Destination } from '@/types/flight';
 import { destinations } from '@/data/destinations';
 
 const destinationsByCode = new Map<string, Destination>();
@@ -6,68 +6,95 @@ for (const d of destinations) {
   destinationsByCode.set(d.airport_code, d);
 }
 
-/** Convert ISO 8601 duration (PT2H26M, PT14H5M, PT45M, PT2H26M30S) to minutes */
-function parseIsoDuration(iso: string): number {
-  const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+/** Convert ISO 8601 duration (PT2H26M, P1DT2H30M, PT45M, PT2H26M30S) to minutes */
+export function parseIsoDuration(iso: string): number {
+  const match = iso.match(/P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   if (!match) return 0;
-  const hours = parseInt(match[1] || '0', 10);
-  const minutes = parseInt(match[2] || '0', 10);
-  const seconds = parseInt(match[3] || '0', 10);
-  return hours * 60 + minutes + (seconds >= 30 ? 1 : 0);
+  const days = parseInt(match[1] || '0', 10);
+  const hours = parseInt(match[2] || '0', 10);
+  const minutes = parseInt(match[3] || '0', 10);
+  const seconds = parseInt(match[4] || '0', 10);
+  return days * 24 * 60 + hours * 60 + minutes + (seconds >= 30 ? 1 : 0);
 }
 
 /** Extract HH:MM from ISO datetime (2026-03-15T14:30:00) */
-function extractTime(isoDatetime: string): string {
+export function extractTime(isoDatetime: string): string {
   const tIndex = isoDatetime.indexOf('T');
   if (tIndex === -1) return isoDatetime;
   return isoDatetime.slice(tIndex + 1, tIndex + 6);
 }
 
-function mapOffer(offer: DuffelOffer, isBest: boolean, index: number): LiveFlight {
-  const slice = offer.slices[0];
-  const segments = slice.segments;
+function getAirportName(iataCode: string): string {
+  const dest = destinationsByCode.get(iataCode);
+  if (dest) return dest.airport_name_ar || dest.airport_name || dest.city_ar || iataCode;
+  return iataCode;
+}
+
+function getAirlineLogo(iataCode: string): string {
+  return `https://pics.avs.io/60/60/${iataCode}.png`;
+}
+
+function mapOffer(
+  offer: AmadeusFlightOffer,
+  dictionaries: AmadeusSearchResponse['dictionaries'],
+  isBest: boolean,
+  index: number
+): LiveFlight {
+  const itinerary = offer.itineraries[0];
+  const segments = itinerary.segments;
   const firstSeg = segments[0];
   const lastSeg = segments[segments.length - 1];
+  const carriers = dictionaries?.carriers ?? {};
+  const aircraft = dictionaries?.aircraft ?? {};
 
-  // Map segments to DuffelSegmentLeg[]
-  const flightLegs: DuffelSegmentLeg[] = segments.map(seg => ({
-    departure_airport: {
-      name: seg.origin.name,
-      id: seg.origin.iata_code,
-      time: seg.departing_at,
-    },
-    arrival_airport: {
-      name: seg.destination.name,
-      id: seg.destination.iata_code,
-      time: seg.arriving_at,
-    },
-    duration: parseIsoDuration(seg.duration),
-    airplane: seg.aircraft?.name,
-    airline: seg.operating_carrier.name,
-    airline_logo: seg.operating_carrier.logo_symbol_url || seg.marketing_carrier.logo_symbol_url || '',
-    travel_class: seg.passengers[0]?.cabin_class_marketing_name || seg.passengers[0]?.cabin_class || 'economy',
-    flight_number: `${seg.marketing_carrier.iata_code} ${seg.marketing_carrier_flight_number}`,
-  }));
+  const fareDetails = offer.travelerPricings?.[0]?.fareDetailsBySegment ?? [];
 
-  // Build layovers from gaps between consecutive segments
-  const layovers: DuffelLayover[] = [];
+  const flightLegs: FlightLeg[] = segments.map((seg, segIdx) => {
+    const segFare = fareDetails.find(f => f.segmentId === seg.id) || fareDetails[segIdx];
+    const carrierCode = seg.operating?.carrierCode || seg.carrierCode;
+    const carrierName = carriers[carrierCode] || carrierCode;
+
+    return {
+      departure_airport: {
+        name: getAirportName(seg.departure.iataCode),
+        id: seg.departure.iataCode,
+        time: seg.departure.at,
+      },
+      arrival_airport: {
+        name: getAirportName(seg.arrival.iataCode),
+        id: seg.arrival.iataCode,
+        time: seg.arrival.at,
+      },
+      duration: parseIsoDuration(seg.duration),
+      airplane: aircraft[seg.aircraft.code] || seg.aircraft.code,
+      airline: carrierName,
+      airline_logo: getAirlineLogo(carrierCode),
+      travel_class: segFare?.cabin || 'ECONOMY',
+      flight_number: `${seg.carrierCode} ${seg.number}`,
+    };
+  });
+
+  const layovers: FlightLayover[] = [];
   for (let i = 0; i < segments.length - 1; i++) {
-    const arriveAt = new Date(segments[i].arriving_at).getTime();
-    const departAt = new Date(segments[i + 1].departing_at).getTime();
+    const arriveAt = new Date(segments[i].arrival.at).getTime();
+    const departAt = new Date(segments[i + 1].departure.at).getTime();
     const gapMinutes = Math.round((departAt - arriveAt) / 60000);
     if (gapMinutes > 0) {
       layovers.push({
         duration: gapMinutes,
-        name: segments[i].destination.name,
-        id: segments[i].destination.iata_code,
+        name: getAirportName(segments[i].arrival.iataCode),
+        id: segments[i].arrival.iataCode,
       });
     }
   }
 
-  const totalDuration = parseIsoDuration(slice.duration);
-  const price = parseFloat(offer.total_amount);
-  const departureCode = firstSeg.origin.iata_code;
-  const arrivalCode = lastSeg.destination.iata_code;
+  const totalDuration = parseIsoDuration(itinerary.duration);
+  const price = parseFloat(offer.price.grandTotal);
+  const departureCode = firstSeg.departure.iataCode;
+  const arrivalCode = lastSeg.arrival.iataCode;
+  const mainCarrierCode = firstSeg.operating?.carrierCode || firstSeg.carrierCode;
+
+  const brandedFare = fareDetails[0]?.brandedFare;
 
   return {
     id: `${isBest ? 'best' : 'offer'}-${index}-${offer.id.slice(0, 8)}`,
@@ -75,42 +102,46 @@ function mapOffer(offer: DuffelOffer, isBest: boolean, index: number): LiveFligh
     layovers: layovers.length > 0 ? layovers : undefined,
     totalDuration,
     price,
-    currency: offer.total_currency,
+    currency: offer.price.currency,
     stops: segments.length - 1,
-    departureTime: extractTime(firstSeg.departing_at),
-    arrivalTime: extractTime(lastSeg.arriving_at),
-    departureAirport: { name: firstSeg.origin.name, id: departureCode },
-    arrivalAirport: { name: lastSeg.destination.name, id: arrivalCode },
-    airlineName: firstSeg.operating_carrier.name,
-    airlineLogo: firstSeg.operating_carrier.logo_symbol_url || firstSeg.marketing_carrier.logo_symbol_url || '',
-    airlineCode: firstSeg.marketing_carrier.iata_code,
-    flightNumber: `${firstSeg.marketing_carrier.iata_code} ${firstSeg.marketing_carrier_flight_number}`,
+    departureTime: extractTime(firstSeg.departure.at),
+    arrivalTime: extractTime(lastSeg.arrival.at),
+    departureAirport: { name: getAirportName(departureCode), id: departureCode },
+    arrivalAirport: { name: getAirportName(arrivalCode), id: arrivalCode },
+    airlineName: carriers[mainCarrierCode] || mainCarrierCode,
+    airlineLogo: getAirlineLogo(mainCarrierCode),
+    airlineCode: firstSeg.carrierCode,
+    flightNumber: `${firstSeg.carrierCode} ${firstSeg.number}`,
     offerId: offer.id,
     isBest,
-    fareBrandName: slice.fare_brand_name || undefined,
-    conditions: offer.conditions,
-    totalEmissionsKg: offer.total_emissions_kg ? parseFloat(offer.total_emissions_kg) : undefined,
+    fareBrandName: brandedFare || undefined,
     originDestination: destinationsByCode.get(departureCode),
     arrivalDestination: destinationsByCode.get(arrivalCode),
+    rawOffer: offer,
   };
 }
 
-export function mapDuffelOffers(response: DuffelOfferResponse): LiveFlight[] {
-  const offers = response.data?.offers ?? [];
+export function mapAmadeusOffers(response: AmadeusSearchResponse): LiveFlight[] {
+  const offers = response.data ?? [];
   if (offers.length === 0) return [];
 
-  // Find cheapest price
   let cheapestPrice = Infinity;
   for (const offer of offers) {
-    const p = parseFloat(offer.total_amount);
-    if (p < cheapestPrice) cheapestPrice = p;
+    const p = parseFloat(offer.price?.grandTotal);
+    if (!isNaN(p) && p < cheapestPrice) cheapestPrice = p;
   }
 
-  return offers.map((offer, i) => {
-    const price = parseFloat(offer.total_amount);
-    const isBest = price === cheapestPrice;
-    return mapOffer(offer, isBest, i);
-  });
+  const results: LiveFlight[] = [];
+  for (let i = 0; i < offers.length; i++) {
+    try {
+      const price = parseFloat(offers[i].price.grandTotal);
+      const isBest = price === cheapestPrice;
+      results.push(mapOffer(offers[i], response.dictionaries, isBest, i));
+    } catch (err) {
+      console.warn(`[flightMapper] Skipping malformed offer at index ${i}:`, err);
+    }
+  }
+  return results;
 }
 
 export function buildGoogleFlightsUrl(

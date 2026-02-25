@@ -1,4 +1,4 @@
-import type { FlightSearchRequest, DuffelOfferResponse, BookingOptionsRequest, FlightCalendarRequest, CreateOrderRequest } from '@/types/flight';
+import type { FlightSearchRequest, AmadeusSearchResponse, BookingOptionsRequest, FlightCalendarRequest, CreateOrderRequest } from '@/types/flight';
 
 export class FlightSearchError extends Error {
   statusCode: number;
@@ -10,19 +10,21 @@ export class FlightSearchError extends Error {
   }
 }
 
-export async function searchFlights(
-  params: FlightSearchRequest,
-  signal?: AbortSignal
-): Promise<DuffelOfferResponse> {
-  const res = await fetch('/api/flights', {
+async function postJson<T>(
+  url: string,
+  body: unknown,
+  fallbackMessage: string,
+  signal?: AbortSignal,
+): Promise<T> {
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
+    body: JSON.stringify(body),
     signal,
   });
 
   if (!res.ok) {
-    let message = 'فشل البحث عن الرحلات';
+    let message = fallbackMessage;
     try {
       const err = await res.json();
       if (err.error) message = err.error;
@@ -32,104 +34,32 @@ export async function searchFlights(
     throw new FlightSearchError(message, res.status);
   }
 
-  return await res.json() as DuffelOfferResponse;
+  return await res.json() as T;
 }
 
-export async function searchFlightCalendar(
+export function searchFlights(
+  params: FlightSearchRequest,
+  signal?: AbortSignal
+): Promise<AmadeusSearchResponse> {
+  return postJson('/api/flights', params, 'فشل البحث عن الرحلات', signal);
+}
+
+export function searchFlightCalendar(
   params: FlightCalendarRequest,
   signal?: AbortSignal
 ): Promise<{ calendar: { departure: string; price?: number; has_no_flights?: boolean; is_lowest_price?: boolean }[] }> {
-  const res = await fetch('/api/calendar', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-    signal,
-  });
-
-  if (!res.ok) {
-    let message = 'فشل تحميل أسعار التقويم';
-    try {
-      const err = await res.json();
-      if (err.error) message = err.error;
-    } catch {
-      // ignore parse error
-    }
-    throw new FlightSearchError(message, res.status);
-  }
-
-  return await res.json();
+  return postJson('/api/calendar', params, 'فشل تحميل أسعار التقويم', signal);
 }
 
-export async function fetchBookingOptions(
+export function fetchBookingOptions(
   params: BookingOptionsRequest,
   signal?: AbortSignal
 ): Promise<{ offer: Record<string, unknown>; google_flights_url: string }> {
-  const res = await fetch('/api/booking-options', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-    signal,
-  });
-
-  if (!res.ok) {
-    let message = 'فشل تحميل تفاصيل العرض';
-    try {
-      const err = await res.json();
-      if (err.error) message = err.error;
-    } catch {
-      // ignore parse error
-    }
-    throw new FlightSearchError(message, res.status);
-  }
-
-  return await res.json();
+  return postJson('/api/booking-options', params, 'فشل تحميل تفاصيل العرض', signal);
 }
 
-export async function fetchOfferById(
-  offerId: string,
-  signal?: AbortSignal
-): Promise<Record<string, unknown>> {
-  const res = await fetch('/api/booking-options', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ offer_id: offerId }),
-    signal,
-  });
-
-  if (!res.ok) {
-    let message = 'فشل تحميل تفاصيل العرض';
-    try {
-      const err = await res.json();
-      if (err.error) message = err.error;
-    } catch {
-      // ignore parse error
-    }
-    throw new FlightSearchError(message, res.status);
-  }
-
-  const data = await res.json();
-  return data.offer;
-}
-
-export async function createBooking(
+export function createBooking(
   params: CreateOrderRequest
 ): Promise<{ order_id: string; booking_reference: string; status: string }> {
-  const res = await fetch('/api/book', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-
-  if (!res.ok) {
-    let message = 'فشل إنشاء الحجز';
-    try {
-      const err = await res.json();
-      if (err.error) message = err.error;
-    } catch {
-      // ignore parse error
-    }
-    throw new FlightSearchError(message, res.status);
-  }
-
-  return await res.json();
+  return postJson('/api/book', params, 'فشل إنشاء الحجز');
 }

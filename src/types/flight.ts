@@ -40,8 +40,8 @@ export interface FlightFilters {
   sortBy: 'price' | 'duration' | 'departure';
 }
 
-// Duffel segment leg — maps to UI display (same shape as old ApifyFlightLeg)
-export interface DuffelSegmentLeg {
+// Flight leg — maps to UI display
+export interface FlightLeg {
   departure_airport: { name: string; id: string; time: string };
   arrival_airport: { name: string; id: string; time: string };
   duration: number;
@@ -52,84 +52,77 @@ export interface DuffelSegmentLeg {
   flight_number: string;
 }
 
-export interface DuffelLayover {
+export interface FlightLayover {
   duration: number;
   name: string;
   id: string;
 }
 
-// Raw Duffel API response shape (for the mapper)
-export interface DuffelOfferResponse {
-  data: {
-    id: string;
-    offers: DuffelOffer[];
-    slices: DuffelRequestSlice[];
+// Amadeus API response types
+export interface AmadeusSearchResponse {
+  data: AmadeusFlightOffer[];
+  dictionaries?: {
+    carriers?: Record<string, string>;
+    aircraft?: Record<string, string>;
+    currencies?: Record<string, string>;
+    locations?: Record<string, { cityCode: string; countryCode: string }>;
   };
 }
 
-export interface DuffelRequestSlice {
-  origin: { iata_code: string; name: string };
-  destination: { iata_code: string; name: string };
-}
-
-export interface DuffelOffer {
+export interface AmadeusFlightOffer {
+  type: string;
   id: string;
-  total_amount: string;
-  total_currency: string;
-  tax_amount: string | null;
-  tax_currency: string | null;
-  base_amount: string | null;
-  base_currency: string | null;
-  owner: {
-    iata_code: string;
-    name: string;
-    logo_symbol_url: string | null;
-    logo_lockup_url: string | null;
-  };
-  slices: DuffelSlice[];
-  passengers: { id: string; type: string }[];
-  conditions: {
-    refund_before_departure: { allowed: boolean; penalty_amount?: string; penalty_currency?: string } | null;
-    change_before_departure: { allowed: boolean; penalty_amount?: string; penalty_currency?: string } | null;
-  };
-  total_emissions_kg?: string;
-  expires_at: string;
+  source: string;
+  instantTicketingRequired: boolean;
+  nonHomogeneous: boolean;
+  oneWay: boolean;
+  lastTicketingDate: string;
+  numberOfBookableSeats: number;
+  itineraries: AmadeusItinerary[];
+  price: AmadeusPrice;
+  pricingOptions: { fareType: string[]; includedCheckedBagsOnly: boolean };
+  validatingAirlineCodes: string[];
+  travelerPricings: AmadeusTravelerPricing[];
 }
 
-export interface DuffelSlice {
-  id: string;
+export interface AmadeusItinerary {
   duration: string; // ISO 8601 e.g. "PT2H26M"
-  origin: { iata_code: string; name: string; city_name: string };
-  destination: { iata_code: string; name: string; city_name: string };
-  segments: DuffelSegment[];
-  fare_brand_name: string | null;
+  segments: AmadeusSegment[];
 }
 
-export interface DuffelSegment {
-  id: string;
-  origin: { iata_code: string; name: string };
-  destination: { iata_code: string; name: string };
-  departing_at: string; // ISO datetime
-  arriving_at: string;
+export interface AmadeusSegment {
+  departure: { iataCode: string; terminal?: string; at: string };
+  arrival: { iataCode: string; terminal?: string; at: string };
+  carrierCode: string;
+  number: string;
+  aircraft: { code: string };
+  operating?: { carrierCode: string };
   duration: string; // ISO 8601
-  operating_carrier: {
-    iata_code: string;
-    name: string;
-    logo_symbol_url: string | null;
-    logo_lockup_url: string | null;
-  };
-  marketing_carrier: {
-    iata_code: string;
-    name: string;
-    logo_symbol_url: string | null;
-    logo_lockup_url: string | null;
-  };
-  operating_carrier_flight_number: string;
-  marketing_carrier_flight_number: string;
-  aircraft: { name: string } | null;
-  passengers: {
-    cabin_class: string;
-    cabin_class_marketing_name: string;
+  id: string;
+  numberOfStops: number;
+  blacklistedInEU: boolean;
+}
+
+export interface AmadeusPrice {
+  currency: string;
+  total: string;
+  base: string;
+  grandTotal: string;
+  fees?: { amount: string; type: string }[];
+}
+
+export interface AmadeusTravelerPricing {
+  travelerId: string;
+  fareOption: string;
+  travelerType: string;
+  price: { currency: string; total: string; base: string };
+  fareDetailsBySegment: {
+    segmentId: string;
+    cabin: string;
+    fareBasis: string;
+    brandedFare?: string;
+    class: string;
+    includedCheckedBags?: { weight?: number; weightUnit?: string; quantity?: number };
   }[];
 }
 
@@ -145,12 +138,12 @@ export interface BookingPassenger {
 }
 
 export interface CreateOrderRequest {
-  offer_id: string;
+  offer: AmadeusFlightOffer;
   passengers: BookingPassenger[];
 }
 
 export interface BookingOptionsRequest {
-  offer_id: string;
+  offer: AmadeusFlightOffer;
   departure_id: string;
   arrival_id: string;
   outbound_date: string;
@@ -187,8 +180,8 @@ export interface FlightSearchRequest {
 // Normalized flight for UI display
 export interface LiveFlight {
   id: string;
-  flightLegs: DuffelSegmentLeg[];
-  layovers?: DuffelLayover[];
+  flightLegs: FlightLeg[];
+  layovers?: FlightLayover[];
   totalDuration: number;
   price: number;
   currency: string;
@@ -204,8 +197,7 @@ export interface LiveFlight {
   offerId: string;
   isBest: boolean;
   fareBrandName?: string;
-  conditions?: DuffelOffer['conditions'];
-  totalEmissionsKg?: number;
   originDestination?: Destination;
   arrivalDestination?: Destination;
+  rawOffer?: AmadeusFlightOffer;
 }

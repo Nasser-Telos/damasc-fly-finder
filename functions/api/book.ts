@@ -1,123 +1,136 @@
-import { type Env, duffelFetch, jsonResponse, errorResponse, corsPreflightResponse } from './_duffel';
+import { type Env, getAmadeusToken, amadeusFetch, extractCountryCode, extractPhoneNumber, checkCredentials, parseJsonBody, jsonResponse, errorResponse, corsPreflightResponse } from './_amadeus';
+import type { BookingPassenger } from './types';
 
 export const onRequestOptions: PagesFunction = async () => corsPreflightResponse();
 
-interface BookingPassenger {
-  given_name: string;
-  family_name: string;
-  born_on: string;
-  email: string;
-  phone_number: string;
-  gender: 'm' | 'f';
-  title: 'mr' | 'ms' | 'mrs';
-}
-
 function validatePassenger(p: BookingPassenger, index: number): string | null {
-  if (!p.given_name?.trim()) return `Passenger ${index + 1}: missing given_name`;
-  if (!p.family_name?.trim()) return `Passenger ${index + 1}: missing family_name`;
-  if (!p.born_on || !/^\d{4}-\d{2}-\d{2}$/.test(p.born_on)) return `Passenger ${index + 1}: invalid born_on`;
-  if (!p.email?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email.trim())) return `Passenger ${index + 1}: invalid email`;
-  if (!p.phone_number?.trim() || !/^\+?[\d\s\-()]{7,}$/.test(p.phone_number.trim())) return `Passenger ${index + 1}: invalid phone_number`;
-  if (!['m', 'f'].includes(p.gender)) return `Passenger ${index + 1}: invalid gender`;
-  if (!['mr', 'ms', 'mrs'].includes(p.title)) return `Passenger ${index + 1}: invalid title`;
+  const n = index + 1;
+  if (!p.given_name?.trim()) return `المسافر ${n}: الاسم الأول مطلوب`;
+  if (!p.family_name?.trim()) return `المسافر ${n}: اسم العائلة مطلوب`;
+  if (!p.born_on || !/^\d{4}-\d{2}-\d{2}$/.test(p.born_on)) return `المسافر ${n}: تاريخ الميلاد غير صالح`;
+  if (!p.email?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email.trim())) return `المسافر ${n}: البريد الإلكتروني غير صالح`;
+  if (!p.phone_number?.trim() || !/^\+?[\d\s\-()]{7,}$/.test(p.phone_number.trim())) return `المسافر ${n}: رقم الهاتف غير صالح`;
+  if (!['m', 'f'].includes(p.gender)) return `المسافر ${n}: الجنس غير صالح`;
+  if (!['mr', 'ms', 'mrs'].includes(p.title)) return `المسافر ${n}: اللقب غير صالح`;
   return null;
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
-  const token = env.DUFFEL_API_TOKEN;
-  if (!token) {
-    return errorResponse('Server misconfiguration: missing API token', 500);
-  }
+  const credErr = checkCredentials(env);
+  if (credErr) return credErr;
 
-  let body: { offer_id?: string; passengers?: BookingPassenger[] };
-  try {
-    body = await request.json();
-  } catch {
-    return errorResponse('Invalid JSON body', 400);
-  }
+  const parsed = await parseJsonBody<{ offer?: Record<string, unknown>; passengers?: BookingPassenger[] }>(request);
+  if (parsed instanceof Response) return parsed;
+  const { offer, passengers } = parsed;
 
-  const { offer_id, passengers } = body;
-
-  if (!offer_id) {
-    return errorResponse('Missing offer_id', 400);
+  if (!offer) {
+    return errorResponse('بيانات العرض مفقودة', 400);
   }
   if (!passengers || !Array.isArray(passengers) || passengers.length === 0) {
-    return errorResponse('Missing or empty passengers array', 400);
+    return errorResponse('بيانات المسافرين مفقودة', 400);
   }
 
-  // Validate all passengers
   for (let i = 0; i < passengers.length; i++) {
     const err = validatePassenger(passengers[i], i);
     if (err) return errorResponse(err, 400);
   }
 
   try {
-    // First fetch the offer to get passenger IDs
-    const offerRes = await duffelFetch(token, `/offers/${offer_id}`);
-    if (!offerRes.ok) {
-      const text = await offerRes.text();
-      console.error(`[book] Failed to fetch offer: ${text}`);
-      return errorResponse('Offer not found or expired', 404);
-    }
+    const token = await getAmadeusToken(env);
 
-    const offerData = await offerRes.json() as { data?: { passengers?: { id: string; type: string }[] } };
-    const offerPassengers = offerData?.data?.passengers ?? [];
-
-    if (offerPassengers.length !== passengers.length) {
-      return errorResponse(
-        `Passenger count mismatch: offer expects ${offerPassengers.length}, got ${passengers.length}`,
-        400
-      );
-    }
-
-    // Map passengers with their Duffel IDs
-    const duffelPassengers = passengers.map((p, i) => ({
-      id: offerPassengers[i].id,
-      type: offerPassengers[i].type,
-      given_name: p.given_name.trim(),
-      family_name: p.family_name.trim(),
-      born_on: p.born_on,
-      email: p.email.trim(),
-      phone_number: p.phone_number.trim(),
-      gender: p.gender,
-      title: p.title,
-    }));
-
-    const res = await duffelFetch(token, '/orders', {
+    // Step 1: Reprice the offer
+    const pricingRes = await amadeusFetch(env, token, '/v1/shopping/flight-offers/pricing', {
       method: 'POST',
       body: {
         data: {
-          type: 'pay_later',
-          selected_offers: [offer_id],
-          passengers: duffelPassengers,
+          type: 'flight-offers-pricing',
+          flightOffers: [offer],
         },
       },
     });
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error(`[book] Duffel order error ${res.status}: ${text}`);
-
-      // Try to parse Duffel error for a friendly message
-      try {
-        const errData = JSON.parse(text);
-        const duffelMsg = errData?.errors?.[0]?.message || 'Booking failed';
-        return errorResponse(duffelMsg, 502);
-      } catch {
-        return errorResponse(`Booking failed: ${res.status}`, 502);
-      }
+    if (!pricingRes.ok) {
+      const text = await pricingRes.text();
+      console.error(`[book] Pricing error ${pricingRes.status}: ${text}`);
+      return errorResponse('انتهت صلاحية العرض أو لم يعد متاحاً', 404);
     }
 
-    const orderData = await res.json() as { data?: { id?: string; booking_reference?: string; status?: string } };
+    const pricingData = await pricingRes.json() as { data?: { flightOffers?: Record<string, unknown>[] } };
+    const pricedOffer = pricingData?.data?.flightOffers?.[0];
+    if (!pricedOffer) {
+      return errorResponse('فشل إعادة تسعير العرض', 502);
+    }
+
+    // Step 2: Create order
+    const travelers = passengers.map((p, i) => ({
+      id: String(i + 1),
+      dateOfBirth: p.born_on,
+      gender: p.gender === 'm' ? 'MALE' : 'FEMALE',
+      name: {
+        firstName: p.given_name.trim().toUpperCase(),
+        lastName: p.family_name.trim().toUpperCase(),
+      },
+      contact: {
+        emailAddress: p.email.trim(),
+        phones: [
+          {
+            deviceType: 'MOBILE',
+            countryCallingCode: extractCountryCode(p.phone_number),
+            number: extractPhoneNumber(p.phone_number),
+          },
+        ],
+      },
+    }));
+
+    const orderRes = await amadeusFetch(env, token, '/v1/booking/flight-orders', {
+      method: 'POST',
+      body: {
+        data: {
+          type: 'flight-order',
+          flightOffers: [pricedOffer],
+          travelers,
+        },
+      },
+    });
+
+    if (!orderRes.ok) {
+      const text = await orderRes.text();
+      console.error(`[book] Order error ${orderRes.status}: ${text}`);
+
+      try {
+        const errData = JSON.parse(text);
+        const amadeusMsg = errData?.errors?.[0]?.detail || errData?.errors?.[0]?.title;
+        if (amadeusMsg) console.error(`[book] Amadeus detail: ${amadeusMsg}`);
+      } catch {
+        // ignore parse error
+      }
+      return errorResponse('فشل إنشاء الحجز', 502);
+    }
+
+    const orderData = await orderRes.json() as {
+      data?: {
+        id?: string;
+        associatedRecords?: { reference: string }[];
+        type?: string;
+      };
+    };
     const order = orderData?.data;
 
+    if (!order?.id) {
+      console.error('[book] Order response missing id:', JSON.stringify(orderData));
+      return errorResponse('استجابة الحجز غير مكتملة', 502);
+    }
+
+    const bookingRef = order.associatedRecords?.[0]?.reference || order.id;
+
     return jsonResponse({
-      order_id: order?.id,
-      booking_reference: order?.booking_reference,
-      status: order?.status,
+      order_id: order.id,
+      booking_reference: bookingRef,
+      status: order.type === 'flight-order' ? 'confirmed' : 'pending',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return errorResponse(`Booking failed: ${message}`, 500);
+    const message = err instanceof Error ? err.message : 'خطأ غير معروف';
+    console.error(`[book] Exception: ${message}`);
+    return errorResponse('فشل إنشاء الحجز', 500);
   }
 };
