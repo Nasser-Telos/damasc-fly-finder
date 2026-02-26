@@ -56,7 +56,13 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     if (!pricingRes.ok) {
       const text = await pricingRes.text();
       console.error(`[book] Pricing error ${pricingRes.status}: ${text}`);
-      return errorResponse('انتهت صلاحية العرض أو لم يعد متاحاً', 404);
+      let userMessage = 'انتهت صلاحية العرض أو لم يعد متاحاً';
+      try {
+        const errData = JSON.parse(text);
+        const detail = errData?.errors?.[0]?.detail || errData?.errors?.[0]?.title;
+        if (detail) userMessage = `انتهت صلاحية العرض: ${detail}`;
+      } catch {}
+      return errorResponse(userMessage, 404);
     }
 
     const pricingData = await pricingRes.json() as { data?: { flightOffers?: Record<string, unknown>[] } };
@@ -65,9 +71,13 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       return errorResponse('فشل إعادة تسعير العرض', 502);
     }
 
+    // Extract traveler IDs from the priced offer to match Amadeus expectations
+    const travelerPricings = (pricedOffer as { travelerPricings?: { travelerId: string }[] }).travelerPricings || [];
+    const travelerIds = travelerPricings.map(tp => tp.travelerId);
+
     // Step 2: Create order
     const travelers = passengers.map((p, i) => ({
-      id: String(i + 1),
+      id: travelerIds[i] || String(i + 1),
       dateOfBirth: p.born_on,
       gender: p.gender === 'm' ? 'MALE' : 'FEMALE',
       name: {
@@ -121,7 +131,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     tomorrow.setDate(tomorrow.getDate() + 1);
     const ticketingAgreement = {
       option: 'DELAY_TO_CANCEL',
-      dateTime: tomorrow.toISOString().split('T')[0],
+      dateTime: tomorrow.toISOString().slice(0, 19),
     };
 
     const orderRes = await amadeusFetch(env, token, '/v1/booking/flight-orders', {
@@ -140,15 +150,13 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     if (!orderRes.ok) {
       const text = await orderRes.text();
       console.error(`[book] Order error ${orderRes.status}: ${text}`);
-
+      let userMessage = 'فشل إنشاء الحجز';
       try {
         const errData = JSON.parse(text);
-        const amadeusMsg = errData?.errors?.[0]?.detail || errData?.errors?.[0]?.title;
-        if (amadeusMsg) console.error(`[book] Amadeus detail: ${amadeusMsg}`);
-      } catch {
-        // ignore parse error
-      }
-      return errorResponse('فشل إنشاء الحجز', 502);
+        const detail = errData?.errors?.[0]?.detail || errData?.errors?.[0]?.title;
+        if (detail) userMessage = `فشل إنشاء الحجز: ${detail}`;
+      } catch {}
+      return errorResponse(userMessage, 502);
     }
 
     const orderData = await orderRes.json() as {

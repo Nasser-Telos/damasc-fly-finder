@@ -110,7 +110,7 @@ export function extractCountryCode(phone: string): string {
 }
 
 export function extractPhoneNumber(phone: string): string {
-  if (!phone.startsWith('+')) return phone.replace(/[\s\-()]/g, '');
+  if (!phone.startsWith('+')) return phone.replace(/\D/g, '');
   const digits = phone.slice(1).replace(/\D/g, '');
   const cc = extractCountryCode(phone);
   return digits.slice(cc.length);
