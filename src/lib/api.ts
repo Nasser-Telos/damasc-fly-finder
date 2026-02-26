@@ -31,6 +31,7 @@ async function postJson<T>(
     } catch {
       // ignore parse error
     }
+    console.error(`[API ${res.status}] ${url}:`, message);
     throw new FlightSearchError(message, res.status);
   }
 
