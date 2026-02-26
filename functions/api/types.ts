@@ -10,4 +10,7 @@ export interface BookingPassenger {
   passport_expiry: string; // YYYY-MM-DD
   nationality: string; // ISO 3166-1 alpha-2 (e.g. "SY")
   issuance_country: string; // ISO 3166-1 alpha-2 (e.g. "SY")
+  address_line?: string;
+  city?: string;
+  postal_code?: string;
 }

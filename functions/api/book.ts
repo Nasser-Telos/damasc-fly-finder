@@ -106,7 +106,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       ],
     }));
 
-    // Top-level contacts (required by Amadeus)
+    // Top-level contacts (required by Amadeus — address is mandatory)
     const firstPassenger = passengers[0];
     const contacts = [
       {
@@ -123,6 +123,12 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
           },
         ],
         emailAddress: firstPassenger.email.trim(),
+        address: {
+          lines: [firstPassenger.address_line?.trim() || 'N/A'],
+          postalCode: firstPassenger.postal_code?.trim() || '00000',
+          cityName: firstPassenger.city?.trim() || 'Damascus',
+          countryCode: firstPassenger.nationality.trim().toUpperCase(),
+        },
       },
     ];
 

@@ -1,6 +1,6 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { ArrowRight, Plane, Clock, User, FileText, AlertCircle } from "lucide-react";
+import { ArrowRight, Plane, Clock, User, FileText, AlertCircle, MapPin } from "lucide-react";
 import { useBooking } from "@/hooks/useBooking";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatPrice, formatDuration } from "@/lib/formatters";
@@ -45,6 +45,9 @@ export default function BookPage() {
     passport_expiry: '',
     nationality: 'SY',
     issuance_country: 'SY',
+    address_line: '',
+    city: '',
+    postal_code: '',
   });
 
   useEffect(() => {
@@ -439,9 +442,49 @@ export default function BookPage() {
                   </div>
                 </div>
 
+                {/* Address Card (nested) */}
+                <div className="book-address-card book-stagger-4">
+                  <div className="book-section-header">
+                    <MapPin className="h-4.5 w-4.5" />
+                    <span>عنوان السكن</span>
+                  </div>
+
+                  <div className="book-field">
+                    <label>العنوان</label>
+                    <input
+                      type="text"
+                      placeholder="مثال: شارع بغداد، بناء 12"
+                      value={form.address_line}
+                      onChange={e => updateField('address_line', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="book-row">
+                    <div className="book-field">
+                      <label>المدينة</label>
+                      <input
+                        type="text"
+                        placeholder="مثال: دمشق"
+                        value={form.city}
+                        onChange={e => updateField('city', e.target.value)}
+                      />
+                    </div>
+                    <div className="book-field">
+                      <label>الرمز البريدي</label>
+                      <input
+                        type="text"
+                        placeholder="مثال: 10100"
+                        value={form.postal_code}
+                        onChange={e => updateField('postal_code', e.target.value)}
+                        dir="ltr"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <button
                   type="submit"
-                  className="book-submit book-stagger-4"
+                  className="book-submit book-stagger-5"
                   disabled={!isFormValid || isBooking || !flight.rawOffer}
                 >
                   {isBooking ? (
