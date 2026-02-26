@@ -9,7 +9,7 @@ import {
   CommandGroup,
   CommandItem,
 } from "@/components/ui/command";
-import { COUNTRIES, REGIONS, getCountryByCode, getCountriesByRegion } from "@/lib/booking-constants";
+import { REGIONS, getCountryByCode, getCountriesByRegion } from "@/lib/booking-constants";
 
 interface CountrySelectProps {
   value: string; // ISO 3166-1 alpha-2
@@ -39,7 +39,6 @@ export function CountrySelect({
           <span className="book-country-display">
             {selected ? (
               <>
-                <span className="book-country-flag">{selected.flag}</span>
                 <span>{selected.name_ar}</span>
                 <span className="book-country-code">({selected.code})</span>
               </>
@@ -71,7 +70,6 @@ export function CountrySelect({
                       }}
                       className="book-country-item"
                     >
-                      <span className="book-country-flag">{country.flag}</span>
                       <span className="flex-1">{country.name_ar}</span>
                       <span className="book-country-item-code">({country.code})</span>
                       {value === country.code && (

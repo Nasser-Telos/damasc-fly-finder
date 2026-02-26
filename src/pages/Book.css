@@ -840,10 +840,6 @@
   flex: 1;
   overflow: hidden;
 }
-.book-country-flag {
-  font-size: 18px;
-  flex-shrink: 0;
-}
 .book-country-code {
   font-size: 12px;
   color: hsl(215 16% 55%);
@@ -883,15 +879,22 @@
   left: auto;
   right: 8px;
 }
+[dir="rtl"] [role="option"] {
+  padding-right: 2rem;
+  padding-left: 0.5rem;
+}
 
 /* Override FormItem spacing for our layout */
 .book-form .book-field {
   gap: 4px;
 }
+.book-form .book-field > * + * {
+  margin-top: 0;
+}
 .book-form .book-field > label {
   font-size: 13px;
   font-weight: 600;
-  color: hsl(215 16% 47%);
+  color: hsl(215 16% 47%) !important;
 }
 
 /* ── MOBILE 480px ── */

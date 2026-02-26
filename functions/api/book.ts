@@ -61,7 +61,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         const errData = JSON.parse(text);
         const detail = errData?.errors?.[0]?.detail || errData?.errors?.[0]?.title;
         if (detail) userMessage = `انتهت صلاحية العرض: ${detail}`;
-      } catch {}
+      } catch { /* JSON parse may fail, ignore */ }
       return errorResponse(userMessage, 404);
     }
 
@@ -159,7 +159,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         const errData = JSON.parse(text);
         const detail = errData?.errors?.[0]?.detail || errData?.errors?.[0]?.title;
         if (detail) userMessage = `فشل إنشاء الحجز: ${detail}`;
-      } catch {}
+      } catch { /* JSON parse may fail, ignore */ }
       return errorResponse(userMessage, 502);
     }
 

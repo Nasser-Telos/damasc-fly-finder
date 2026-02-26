@@ -148,7 +148,7 @@ describe('mapAmadeusOffers', () => {
     const response: AmadeusSearchResponse = {
       data: [
         makeOffer('1', '200.00'),
-        { id: 'bad', itineraries: [] } as any, // malformed — no segments
+        { id: 'bad', itineraries: [] } as unknown as AmadeusSearchResponse['data'][0], // malformed — no segments
         makeOffer('3', '300.00'),
       ],
     };

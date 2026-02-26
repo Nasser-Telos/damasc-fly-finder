@@ -52,7 +52,7 @@ function SearchFlightCard({ flight, isCheapest, index = 0, onBookClick, currency
               src={flight.airlineLogo}
               alt={flight.airlineName}
               style={{ width: 28, height: 28, borderRadius: 4, objectFit: 'contain' }}
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling && ((e.target as HTMLImageElement).parentElement!.textContent = flight.airlineCode); }}
+              onError={(e) => { const img = e.target as HTMLImageElement; img.style.display = 'none'; if (img.nextElementSibling && img.parentElement) { img.parentElement.textContent = flight.airlineCode; } }}
             />
           ) : (
             flight.airlineCode

@@ -47,7 +47,7 @@ export function useFlightCalendar(params: UseFlightCalendarParams | null): UseFl
     console.error('[calendar] Query failed:', error);
   }
 
-  const calendarData = data?.calendar ?? [];
+  const calendarData = useMemo(() => data?.calendar ?? [], [data?.calendar]);
 
   const calendarMap = useMemo(() => {
     const map = new Map<string, CalendarEntry>();
