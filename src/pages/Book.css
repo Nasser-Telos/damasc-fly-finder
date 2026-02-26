@@ -66,26 +66,58 @@
   padding: 16px;
 }
 
-/* ── FLIGHT SUMMARY ── */
+/* ── STAGGERED ENTRY ANIMATIONS ── */
+@keyframes book-stagger-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.book-root.book-on .book-stagger-0 {
+  animation: book-stagger-in 0.35s ease-out both;
+  animation-delay: 0ms;
+}
+.book-root.book-on .book-stagger-1 {
+  animation: book-stagger-in 0.35s ease-out both;
+  animation-delay: 50ms;
+}
+.book-root.book-on .book-stagger-2 {
+  animation: book-stagger-in 0.35s ease-out both;
+  animation-delay: 100ms;
+}
+.book-root.book-on .book-stagger-3 {
+  animation: book-stagger-in 0.35s ease-out both;
+  animation-delay: 200ms;
+}
+.book-root.book-on .book-stagger-4 {
+  animation: book-stagger-in 0.35s ease-out both;
+  animation-delay: 300ms;
+}
+
+/* ── FLIGHT SUMMARY CARD ── */
 .book-summary {
   background: hsl(220 14% 97%);
   border: 1.5px solid hsl(220 13% 91%);
   border-radius: 16px;
   padding: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
-.book-summary-row {
+.book-summary-top {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 8px;
-}
-.book-summary-row:last-child {
-  margin-bottom: 0;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid hsl(220 13% 91%);
 }
 .book-summary-logo {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: hsl(217 91% 95%);
   display: flex;
@@ -94,10 +126,16 @@
   flex-shrink: 0;
 }
 .book-summary-logo img {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: 4px;
   object-fit: contain;
+}
+.book-summary-airline-info {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
 .book-summary-airline {
   font-size: 14px;
@@ -107,30 +145,201 @@
 .book-summary-flight {
   font-size: 12px;
   color: hsl(215 16% 55%);
-  margin-right: 8px;
 }
-.book-summary-route {
-  font-size: 14px;
-  color: hsl(213 10% 30%);
+.book-summary-class {
+  font-size: 11px;
+  font-weight: 600;
+  color: hsl(217 91% 50%);
+  background: hsl(217 91% 96%);
+  padding: 3px 10px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+
+/* ── ROUTE VISUALIZATION ── */
+.book-route {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.book-route-point {
+  flex: 1;
+  text-align: center;
+}
+.book-route-time {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: hsl(213 10% 20%);
+}
+.book-route-city {
+  display: block;
+  font-size: 12px;
+  color: hsl(215 16% 47%);
+  margin-top: 2px;
+}
+.book-route-code {
+  display: block;
+  font-size: 11px;
+  color: hsl(215 16% 62%);
+  letter-spacing: 1px;
   font-weight: 500;
 }
+.book-route-middle {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.book-route-duration {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: hsl(215 16% 47%);
+}
+.book-route-line {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0 2px;
+}
+.book-route-line-bar {
+  flex: 1;
+  height: 0;
+  border-top: 1.5px dashed hsl(217 91% 80%);
+}
+.book-route-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: hsl(0 0% 100%);
+  border: 2px solid hsl(217 91% 60%);
+  flex-shrink: 0;
+}
+.book-route-stops {
+  font-size: 11px;
+  color: hsl(217 91% 50%);
+  font-weight: 600;
+}
+.book-route-stops-transfer {
+  color: hsl(25 90% 45%);
+}
+
+/* ── PRICE ── */
 .book-summary-price {
   font-size: 22px;
   font-weight: 700;
   color: hsl(217 91% 45%);
   margin-top: 8px;
-  padding-top: 8px;
+  padding-top: 10px;
   border-top: 1px solid hsl(220 13% 91%);
 }
 
-/* ── FORM ── */
-.book-section-title {
+/* ── STEP PROGRESS INDICATOR ── */
+.book-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 20px;
+  padding: 16px 12px;
+}
+.book-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.book-step-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  border: 2px solid hsl(220 13% 85%);
+  color: hsl(215 16% 62%);
+  background: hsl(0 0% 100%);
+  transition: all 0.3s ease;
+}
+.book-step-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: hsl(215 16% 55%);
+  white-space: nowrap;
+  transition: color 0.3s ease;
+}
+.book-step-connector {
+  width: 40px;
+  height: 0;
+  border-top: 2px dashed hsl(220 13% 85%);
+  margin: 0 6px;
+  margin-bottom: 22px;
+  transition: border-color 0.3s ease;
+}
+/* Active step (blue) */
+.book-step-active .book-step-circle {
+  border-color: hsl(217 91% 60%);
+  background: hsl(217 91% 60%);
+  color: hsl(0 0% 100%);
+}
+.book-step-active .book-step-label {
+  color: hsl(217 91% 50%);
+}
+/* Completed step (green) */
+.book-step-done .book-step-circle {
+  border-color: hsl(142 71% 42%);
+  background: hsl(142 71% 42%);
+  color: hsl(0 0% 100%);
+}
+.book-step-done .book-step-label {
+  color: hsl(142 71% 35%);
+}
+
+/* ── FORM SECTION CARDS ── */
+.book-section-card {
+  background: hsl(0 0% 100%);
+  border: 1.5px solid hsl(220 13% 91%);
+  border-radius: 16px;
+  padding: 20px 16px;
+  margin-bottom: 16px;
+}
+.book-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 16px;
   font-weight: 700;
   color: hsl(213 10% 20%);
-  margin-bottom: 14px;
+  margin-bottom: 16px;
+}
+.book-section-header svg {
+  color: hsl(217 91% 55%);
+  flex-shrink: 0;
 }
 
+/* Passport card (nested inside form) */
+.book-passport-card {
+  border-top: 1.5px solid hsl(220 13% 91%);
+  background: hsl(220 14% 98.5%);
+  border-radius: 12px;
+  padding: 16px 14px;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.book-passport-card .book-section-header {
+  margin-bottom: 4px;
+}
+
+/* ── FORM ── */
 .book-form {
   display: flex;
   flex-direction: column;
@@ -156,12 +365,18 @@
   font-family: inherit;
   color: hsl(213 10% 20%);
   background: hsl(0 0% 100%);
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
   outline: none;
+}
+.book-field input:hover,
+.book-field select:hover {
+  border-color: hsl(220 13% 82%);
+  background-color: hsl(220 14% 99%);
 }
 .book-field input:focus,
 .book-field select:focus {
   border-color: hsl(217 91% 60%);
+  box-shadow: 0 0 0 3px hsl(217 91% 60% / 0.1);
 }
 .book-field input::placeholder {
   color: hsl(215 16% 70%);
@@ -203,7 +418,7 @@
   transform: none;
 }
 
-/* ── SUCCESS ── */
+/* ── SUCCESS STATE ── */
 .book-success {
   text-align: center;
   padding: 32px 16px;
@@ -212,22 +427,74 @@
   border-radius: 16px;
   margin-top: 16px;
 }
-.book-success-icon {
-  font-size: 48px;
-  margin-bottom: 12px;
+
+/* Animated SVG Checkmark */
+.book-success-check {
+  margin: 0 auto 16px;
+  width: 56px;
+  height: 56px;
 }
+.book-check-svg {
+  width: 56px;
+  height: 56px;
+}
+.book-check-circle {
+  stroke: hsl(142 71% 42%);
+  stroke-width: 2.5;
+  stroke-dasharray: 151;
+  stroke-dashoffset: 151;
+  animation: book-check-circle-draw 0.5s ease-out 0.1s forwards;
+}
+.book-check-path {
+  stroke: hsl(142 71% 42%);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 36;
+  stroke-dashoffset: 36;
+  animation: book-check-path-draw 0.35s ease-out 0.45s forwards;
+}
+@keyframes book-check-circle-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes book-check-path-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Staggered success detail reveals */
+@keyframes book-success-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.book-success-reveal {
+  opacity: 0;
+  animation: book-success-fade 0.35s ease-out forwards;
+}
+
 .book-success-title {
   font-size: 18px;
   font-weight: 700;
   color: hsl(142 71% 30%);
   margin-bottom: 6px;
 }
+.book-success-ref-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: hsl(215 16% 55%);
+  margin-bottom: 4px;
+}
 .book-success-ref {
   font-size: 28px;
   font-weight: 700;
   color: hsl(213 10% 20%);
   letter-spacing: 2px;
-  margin: 12px 0;
+  margin: 4px 0 12px;
   padding: 12px;
   background: hsl(0 0% 100%);
   border-radius: 12px;
@@ -239,8 +506,11 @@
   margin-top: 4px;
 }
 
-/* ── ERROR ── */
+/* ── ERROR BANNER ── */
 .book-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   padding: 12px 16px;
   background: hsl(0 80% 97%);
   border: 1px solid hsl(0 80% 85%);
@@ -248,6 +518,50 @@
   color: hsl(0 80% 40%);
   font-size: 14px;
   margin-bottom: 12px;
+}
+
+/* ── ERROR / EXPIRED STATE CARDS ── */
+.book-state-card {
+  text-align: center;
+  padding: 48px 24px;
+  border: 1.5px solid hsl(220 13% 91%);
+  border-radius: 16px;
+  margin-top: 24px;
+}
+.book-state-error {
+  background: hsl(0 80% 98%);
+  border-color: hsl(0 80% 88%);
+}
+.book-state-expired {
+  background: hsl(40 80% 98%);
+  border-color: hsl(40 60% 85%);
+}
+.book-state-icon {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 16px;
+  color: hsl(215 16% 55%);
+}
+.book-state-error .book-state-icon {
+  color: hsl(0 70% 50%);
+}
+.book-state-expired .book-state-icon {
+  color: hsl(40 70% 45%);
+}
+.book-state-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: hsl(213 10% 20%);
+  margin-bottom: 6px;
+}
+.book-state-desc {
+  font-size: 14px;
+  color: hsl(215 16% 47%);
+  margin-bottom: 20px;
+}
+.book-state-cta {
+  max-width: 220px;
+  margin: 0 auto;
 }
 
 /* ── LOADING STATE ── */
@@ -262,11 +576,42 @@
   font-size: 15px;
 }
 
-/* ── MOBILE ── */
+/* ── MOBILE 480px ── */
 @media (max-width: 480px) {
   .book-header { padding: 12px 16px; }
   .book-header-title { font-size: 15px; }
   .book-content { padding: 12px 14px; }
   .book-row { grid-template-columns: 1fr; }
   .book-summary-price { font-size: 20px; }
+  .book-route-time { font-size: 18px; }
+  .book-route-city { font-size: 11px; }
+  .book-section-card { padding: 16px 14px; }
+  .book-passport-card { padding: 14px 12px; }
+  .book-step-circle {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  .book-step-label { font-size: 10px; }
+  .book-step-connector { width: 28px; }
+  .book-summary-class { font-size: 10px; padding: 2px 8px; }
+}
+
+/* ── MOBILE 360px ── */
+@media (max-width: 360px) {
+  .book-content { padding: 10px 12px; }
+  .book-route-time { font-size: 16px; }
+  .book-route-code { font-size: 10px; }
+  .book-route-duration { font-size: 10px; }
+  .book-step-circle {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+  }
+  .book-step-label { font-size: 9px; }
+  .book-step-connector { width: 20px; margin: 0 4px; }
+  .book-section-card { padding: 14px 12px; }
+  .book-section-header { font-size: 14px; }
+  .book-summary-top { gap: 8px; }
+  .book-state-card { padding: 36px 16px; }
 }
