@@ -595,6 +595,305 @@
   font-size: 15px;
 }
 
+/* ── ICON INPUT WRAPPER ── */
+.book-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.book-input-icon {
+  position: absolute;
+  right: 12px;
+  width: 16px;
+  height: 16px;
+  color: hsl(215 16% 62%);
+  pointer-events: none;
+  transition: color 0.2s;
+  flex-shrink: 0;
+}
+.book-input-with-icon {
+  width: 100%;
+  padding: 12px 14px 12px 14px;
+  padding-right: 38px;
+  border: 1.5px solid hsl(220 13% 91%);
+  border-radius: 12px;
+  font-size: 15px;
+  font-family: inherit;
+  color: hsl(213 10% 20%);
+  background: hsl(0 0% 100%);
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+.book-input-with-icon:hover {
+  border-color: hsl(220 13% 82%);
+  background-color: hsl(220 14% 99%);
+}
+.book-input-with-icon:focus {
+  border-color: hsl(217 91% 60%);
+  box-shadow: 0 0 0 3px hsl(217 91% 60% / 0.1);
+}
+.book-input-with-icon::placeholder {
+  color: hsl(215 16% 70%);
+}
+.book-input-wrap:focus-within .book-input-icon {
+  color: hsl(217 91% 60%);
+}
+
+/* LTR override for email/phone/passport */
+.book-input-ltr .book-input-icon {
+  right: auto;
+  left: 12px;
+}
+.book-input-ltr .book-input-with-icon {
+  padding-right: 14px;
+  padding-left: 38px;
+}
+
+/* Input state: error */
+.book-input-error .book-input-with-icon {
+  border-color: hsl(0 80% 60%);
+}
+.book-input-error .book-input-icon {
+  color: hsl(0 80% 55%);
+}
+.book-input-error .book-input-with-icon:focus {
+  box-shadow: 0 0 0 3px hsl(0 80% 60% / 0.1);
+}
+/* Input state: success */
+.book-input-success .book-input-with-icon {
+  border-color: hsl(142 60% 55%);
+}
+.book-input-success .book-input-icon {
+  color: hsl(142 60% 45%);
+}
+
+/* ── FIELD HINT ── */
+.book-field-hint {
+  font-size: 11px;
+  color: hsl(215 16% 62%);
+  margin-top: -2px;
+}
+
+/* ── ERROR MESSAGE ANIMATION ── */
+@keyframes book-error-appear {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.book-error-msg {
+  animation: book-error-appear 0.2s ease-out;
+  font-size: 12px !important;
+  margin-top: 2px !important;
+}
+
+/* ── SHADCN SELECT TRIGGER OVERRIDE ── */
+.book-select-trigger {
+  padding: 12px 14px !important;
+  height: auto !important;
+  border: 1.5px solid hsl(220 13% 91%) !important;
+  border-radius: 12px !important;
+  font-size: 15px !important;
+  font-family: inherit !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+.book-select-trigger:hover {
+  border-color: hsl(220 13% 82%) !important;
+}
+.book-select-trigger:focus {
+  border-color: hsl(217 91% 60%) !important;
+  box-shadow: 0 0 0 3px hsl(217 91% 60% / 0.1) !important;
+}
+
+/* ── DATE PICKER ── */
+.book-datepicker-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid hsl(220 13% 91%);
+  border-radius: 12px;
+  font-size: 15px;
+  font-family: inherit;
+  color: hsl(213 10% 20%);
+  background: hsl(0 0% 100%);
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+  text-align: right;
+}
+.book-datepicker-trigger:hover {
+  border-color: hsl(220 13% 82%);
+  background-color: hsl(220 14% 99%);
+}
+.book-datepicker-trigger:focus {
+  border-color: hsl(217 91% 60%);
+  box-shadow: 0 0 0 3px hsl(217 91% 60% / 0.1);
+  outline: none;
+}
+.book-datepicker-icon {
+  width: 16px;
+  height: 16px;
+  color: hsl(215 16% 62%);
+  flex-shrink: 0;
+}
+.book-datepicker-placeholder {
+  color: hsl(215 16% 70%);
+}
+.book-datepicker-error {
+  border-color: hsl(0 80% 60%);
+}
+.book-datepicker-error .book-datepicker-icon {
+  color: hsl(0 80% 55%);
+}
+.book-datepicker-nav {
+  display: flex;
+  gap: 8px;
+  padding: 12px 12px 0;
+}
+.book-datepicker-select {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1.5px solid hsl(220 13% 91%);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: hsl(213 10% 25%);
+  background: hsl(0 0% 100%);
+  cursor: pointer;
+  outline: none;
+}
+.book-datepicker-select:focus {
+  border-color: hsl(217 91% 60%);
+}
+
+/* ── GENDER TOGGLE ── */
+.book-gender-toggle {
+  display: flex;
+  background: hsl(220 14% 96%);
+  border-radius: 12px;
+  padding: 3px;
+  gap: 3px;
+  height: 46px;
+}
+.book-gender-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  color: hsl(215 16% 47%);
+  background: transparent;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.book-gender-option:hover:not(.book-gender-active) {
+  background: hsl(220 14% 92%);
+}
+.book-gender-active {
+  background: hsl(217 91% 60%);
+  color: hsl(0 0% 100%);
+  box-shadow: 0 1px 4px hsl(217 91% 60% / 0.25);
+}
+
+/* ── COUNTRY SELECT ── */
+.book-country-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid hsl(220 13% 91%);
+  border-radius: 12px;
+  font-size: 15px;
+  font-family: inherit;
+  color: hsl(213 10% 20%);
+  background: hsl(0 0% 100%);
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+  text-align: right;
+}
+.book-country-trigger:hover {
+  border-color: hsl(220 13% 82%);
+  background-color: hsl(220 14% 99%);
+}
+.book-country-trigger:focus {
+  border-color: hsl(217 91% 60%);
+  box-shadow: 0 0 0 3px hsl(217 91% 60% / 0.1);
+  outline: none;
+}
+.book-country-error {
+  border-color: hsl(0 80% 60%);
+}
+.book-country-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  overflow: hidden;
+}
+.book-country-flag {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.book-country-code {
+  font-size: 12px;
+  color: hsl(215 16% 55%);
+}
+.book-country-placeholder {
+  color: hsl(215 16% 70%);
+}
+.book-country-chevron {
+  width: 14px;
+  height: 14px;
+  color: hsl(215 16% 55%);
+  flex-shrink: 0;
+}
+.book-country-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px !important;
+  cursor: pointer;
+}
+.book-country-item-code {
+  font-size: 11px;
+  color: hsl(215 16% 55%);
+}
+.book-country-search {
+  text-align: right;
+}
+
+/* RTL fix for Command search icon */
+[dir="rtl"] [cmdk-input-wrapper] svg {
+  margin-right: 0;
+  margin-left: 8px;
+}
+
+/* RTL fix for Radix Select items */
+[dir="rtl"] [role="option"] span:first-child {
+  left: auto;
+  right: 8px;
+}
+
+/* Override FormItem spacing for our layout */
+.book-form .book-field {
+  gap: 4px;
+}
+.book-form .book-field > label {
+  font-size: 13px;
+  font-weight: 600;
+  color: hsl(215 16% 47%);
+}
+
 /* ── MOBILE 480px ── */
 @media (max-width: 480px) {
   .book-header { padding: 12px 16px; }

@@ -1,13 +1,22 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { ArrowRight, Plane, Clock, User, FileText, AlertCircle, MapPin } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowRight, Plane, Clock, User, FileText, AlertCircle, MapPin, Mail, Phone, Building2, Hash } from "lucide-react";
 import { useBooking } from "@/hooks/useBooking";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatPrice, formatDuration } from "@/lib/formatters";
 import { getAirlineArabicName } from "@/lib/airlineLookup";
-import type { BookingPassenger, LiveFlight } from "@/types/flight";
+import type { LiveFlight } from "@/types/flight";
 import type { CurrencyCode } from "@/lib/currency";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
+import { CountrySelect } from "@/components/ui/country-select";
+import { GenderToggle } from "@/components/booking/gender-toggle";
+import { bookingPassengerSchema, type BookingFormData } from "@/lib/booking-schema";
+import { TITLE_OPTIONS } from "@/lib/booking-constants";
 import "./Book.css";
 
 function getTravelClassArabic(travelClass: string): string {
@@ -32,55 +41,54 @@ export default function BookPage() {
 
   const { book, isBooking, bookingResult, error, reset } = useBooking();
 
-  // Form state
-  const [form, setForm] = useState<BookingPassenger>({
-    given_name: '',
-    family_name: '',
-    born_on: '',
-    email: '',
-    phone_number: '',
-    gender: 'm',
-    title: 'mr',
-    passport_number: '',
-    passport_expiry: '',
-    nationality: 'SY',
-    issuance_country: 'SY',
-    address_line: '',
-    city: '',
-    postal_code: '',
+  // Form with Zod validation
+  const form = useForm<BookingFormData>({
+    resolver: zodResolver(bookingPassengerSchema),
+    mode: 'onBlur',
+    defaultValues: {
+      given_name: '',
+      family_name: '',
+      born_on: '',
+      email: '',
+      phone_number: '',
+      gender: 'm',
+      title: 'mr',
+      passport_number: '',
+      passport_expiry: '',
+      nationality: 'SY',
+      issuance_country: 'SY',
+      address_line: '',
+      city: '',
+      postal_code: '',
+    },
   });
 
   useEffect(() => {
     requestAnimationFrame(() => setReady(true));
   }, []);
 
-  const updateField = (field: keyof BookingPassenger, value: string) => {
-    setForm(prev => ({ ...prev, [field]: value }));
-    if (error) reset();
-  };
+  // Reset booking error when form values change
+  useEffect(() => {
+    const subscription = form.watch(() => {
+      if (error) reset();
+    });
+    return () => subscription.unsubscribe();
+  }, [form, error, reset]);
 
-  const isFormValid =
-    form.given_name.trim() &&
-    form.family_name.trim() &&
-    form.born_on &&
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) &&
-    /^\+?[\d\s\-()]{7,}$/.test(form.phone_number.trim()) &&
-    form.passport_number.trim() &&
-    form.passport_expiry &&
-    /^[A-Z]{2}$/.test(form.nationality) &&
-    /^[A-Z]{2}$/.test(form.issuance_country);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!flight?.rawOffer || !isFormValid) return;
+  const onSubmit = (data: BookingFormData) => {
+    if (!flight?.rawOffer) return;
     book({
       offer: flight.rawOffer,
-      passengers: [form],
+      passengers: [data],
     });
   };
 
   // Current step for progress indicator
   const currentStep = bookingResult ? 3 : 2;
+
+  // Date constraints
+  const today = new Date();
+  const minBirthDate = new Date(1930, 0, 1);
 
   // -- Error state: no offerId --
   if (!offerId) {
@@ -282,218 +290,353 @@ export default function BookPage() {
                 <span>بيانات المسافر</span>
               </div>
 
-              <form className="book-form" onSubmit={handleSubmit}>
-                <div className="book-row">
-                  <div className="book-field">
-                    <label>الاسم الأول (بالإنجليزية)</label>
-                    <input
-                      type="text"
-                      placeholder="مثال: Ahmed"
-                      value={form.given_name}
-                      onChange={e => updateField('given_name', e.target.value)}
-                      required
+              <Form {...form}>
+                <form className="book-form" onSubmit={form.handleSubmit(onSubmit)}>
+                  {/* Name row */}
+                  <div className="book-row">
+                    <FormField
+                      control={form.control}
+                      name="given_name"
+                      render={({ field, fieldState }) => (
+                        <FormItem className="book-field">
+                          <FormLabel>الاسم الأول (بالإنجليزية)</FormLabel>
+                          <FormControl>
+                            <div className={`book-input-wrap ${fieldState.error ? 'book-input-error' : ''} ${field.value && !fieldState.error ? 'book-input-success' : ''}`}>
+                              <User className="book-input-icon" />
+                              <input
+                                {...field}
+                                className="book-input-with-icon"
+                                type="text"
+                                placeholder="مثال: Ahmed"
+                              />
+                            </div>
+                          </FormControl>
+                          <span className="book-field-hint">الاسم كما هو في جواز السفر</span>
+                          <FormMessage className="book-error-msg" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="family_name"
+                      render={({ field, fieldState }) => (
+                        <FormItem className="book-field">
+                          <FormLabel>اسم العائلة (بالإنجليزية)</FormLabel>
+                          <FormControl>
+                            <div className={`book-input-wrap ${fieldState.error ? 'book-input-error' : ''} ${field.value && !fieldState.error ? 'book-input-success' : ''}`}>
+                              <User className="book-input-icon" />
+                              <input
+                                {...field}
+                                className="book-input-with-icon"
+                                type="text"
+                                placeholder="مثال: Al-Hassan"
+                              />
+                            </div>
+                          </FormControl>
+                          <span className="book-field-hint">الاسم كما هو في جواز السفر</span>
+                          <FormMessage className="book-error-msg" />
+                        </FormItem>
+                      )}
                     />
                   </div>
-                  <div className="book-field">
-                    <label>اسم العائلة (بالإنجليزية)</label>
-                    <input
-                      type="text"
-                      placeholder="مثال: Al-Hassan"
-                      value={form.family_name}
-                      onChange={e => updateField('family_name', e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
 
-                <div className="book-row">
-                  <div className="book-field">
-                    <label>تاريخ الميلاد</label>
-                    <input
-                      type="date"
-                      value={form.born_on}
-                      onChange={e => updateField('born_on', e.target.value)}
-                      required
+                  {/* Birth date + Gender row */}
+                  <div className="book-row">
+                    <FormField
+                      control={form.control}
+                      name="born_on"
+                      render={({ field, fieldState }) => (
+                        <FormItem className="book-field">
+                          <FormLabel>تاريخ الميلاد</FormLabel>
+                          <FormControl>
+                            <DatePicker
+                              value={field.value}
+                              onChange={field.onChange}
+                              maxDate={today}
+                              minDate={minBirthDate}
+                              placeholder="اختر تاريخ الميلاد"
+                              error={!!fieldState.error}
+                            />
+                          </FormControl>
+                          <FormMessage className="book-error-msg" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="gender"
+                      render={({ field }) => (
+                        <FormItem className="book-field">
+                          <FormLabel>الجنس</FormLabel>
+                          <FormControl>
+                            <GenderToggle
+                              value={field.value}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage className="book-error-msg" />
+                        </FormItem>
+                      )}
                     />
                   </div>
-                  <div className="book-field">
-                    <label>الجنس</label>
-                    <select
-                      value={form.gender}
-                      onChange={e => updateField('gender', e.target.value)}
-                    >
-                      <option value="m">ذكر</option>
-                      <option value="f">أنثى</option>
-                    </select>
-                  </div>
-                </div>
 
-                <div className="book-field">
-                  <label>اللقب</label>
-                  <select
-                    value={form.title}
-                    onChange={e => updateField('title', e.target.value)}
+                  {/* Title */}
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem className="book-field">
+                        <FormLabel>اللقب</FormLabel>
+                        <Select
+                          dir="rtl"
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="book-select-trigger">
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {TITLE_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage className="book-error-msg" />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Email */}
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field, fieldState }) => (
+                      <FormItem className="book-field">
+                        <FormLabel>البريد الإلكتروني</FormLabel>
+                        <FormControl>
+                          <div className={`book-input-wrap book-input-ltr ${fieldState.error ? 'book-input-error' : ''} ${field.value && !fieldState.error ? 'book-input-success' : ''}`}>
+                            <Mail className="book-input-icon" />
+                            <input
+                              {...field}
+                              className="book-input-with-icon"
+                              type="email"
+                              placeholder="example@email.com"
+                              dir="ltr"
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage className="book-error-msg" />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Phone */}
+                  <FormField
+                    control={form.control}
+                    name="phone_number"
+                    render={({ field, fieldState }) => (
+                      <FormItem className="book-field">
+                        <FormLabel>رقم الهاتف</FormLabel>
+                        <FormControl>
+                          <div className={`book-input-wrap book-input-ltr ${fieldState.error ? 'book-input-error' : ''} ${field.value && !fieldState.error ? 'book-input-success' : ''}`}>
+                            <Phone className="book-input-icon" />
+                            <input
+                              {...field}
+                              className="book-input-with-icon"
+                              type="tel"
+                              placeholder="+963 xxx xxx xxx"
+                              dir="ltr"
+                            />
+                          </div>
+                        </FormControl>
+                        <span className="book-field-hint">يرجى إدخال رقم الهاتف مع رمز البلد</span>
+                        <FormMessage className="book-error-msg" />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Passport Info Card */}
+                  <div className="book-passport-card book-stagger-3">
+                    <div className="book-section-header">
+                      <FileText className="h-4.5 w-4.5" />
+                      <span>بيانات جواز السفر</span>
+                    </div>
+
+                    <div className="book-row">
+                      <FormField
+                        control={form.control}
+                        name="passport_number"
+                        render={({ field, fieldState }) => (
+                          <FormItem className="book-field">
+                            <FormLabel>رقم جواز السفر</FormLabel>
+                            <FormControl>
+                              <div className={`book-input-wrap book-input-ltr ${fieldState.error ? 'book-input-error' : ''} ${field.value && !fieldState.error ? 'book-input-success' : ''}`}>
+                                <FileText className="book-input-icon" />
+                                <input
+                                  {...field}
+                                  className="book-input-with-icon"
+                                  type="text"
+                                  placeholder="مثال: N12345678"
+                                  dir="ltr"
+                                />
+                              </div>
+                            </FormControl>
+                            <FormMessage className="book-error-msg" />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="passport_expiry"
+                        render={({ field, fieldState }) => (
+                          <FormItem className="book-field">
+                            <FormLabel>تاريخ انتهاء الجواز</FormLabel>
+                            <FormControl>
+                              <DatePicker
+                                value={field.value}
+                                onChange={field.onChange}
+                                minDate={today}
+                                maxDate={new Date(2040, 11, 31)}
+                                placeholder="اختر تاريخ الانتهاء"
+                                error={!!fieldState.error}
+                              />
+                            </FormControl>
+                            <FormMessage className="book-error-msg" />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="book-row">
+                      <FormField
+                        control={form.control}
+                        name="nationality"
+                        render={({ field, fieldState }) => (
+                          <FormItem className="book-field">
+                            <FormLabel>الجنسية</FormLabel>
+                            <FormControl>
+                              <CountrySelect
+                                value={field.value}
+                                onChange={field.onChange}
+                                placeholder="اختر الجنسية"
+                                error={!!fieldState.error}
+                              />
+                            </FormControl>
+                            <FormMessage className="book-error-msg" />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="issuance_country"
+                        render={({ field, fieldState }) => (
+                          <FormItem className="book-field">
+                            <FormLabel>بلد الإصدار</FormLabel>
+                            <FormControl>
+                              <CountrySelect
+                                value={field.value}
+                                onChange={field.onChange}
+                                placeholder="اختر بلد الإصدار"
+                                error={!!fieldState.error}
+                              />
+                            </FormControl>
+                            <FormMessage className="book-error-msg" />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Address Card */}
+                  <div className="book-address-card book-stagger-4">
+                    <div className="book-section-header">
+                      <MapPin className="h-4.5 w-4.5" />
+                      <span>عنوان السكن</span>
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="address_line"
+                      render={({ field }) => (
+                        <FormItem className="book-field">
+                          <FormLabel>العنوان</FormLabel>
+                          <FormControl>
+                            <div className="book-input-wrap">
+                              <MapPin className="book-input-icon" />
+                              <input
+                                {...field}
+                                className="book-input-with-icon"
+                                type="text"
+                                placeholder="مثال: شارع بغداد، بناء 12"
+                              />
+                            </div>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="book-row">
+                      <FormField
+                        control={form.control}
+                        name="city"
+                        render={({ field }) => (
+                          <FormItem className="book-field">
+                            <FormLabel>المدينة</FormLabel>
+                            <FormControl>
+                              <div className="book-input-wrap">
+                                <Building2 className="book-input-icon" />
+                                <input
+                                  {...field}
+                                  className="book-input-with-icon"
+                                  type="text"
+                                  placeholder="مثال: دمشق"
+                                />
+                              </div>
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="postal_code"
+                        render={({ field }) => (
+                          <FormItem className="book-field">
+                            <FormLabel>الرمز البريدي</FormLabel>
+                            <FormControl>
+                              <div className="book-input-wrap book-input-ltr">
+                                <Hash className="book-input-icon" />
+                                <input
+                                  {...field}
+                                  className="book-input-with-icon"
+                                  type="text"
+                                  placeholder="مثال: 10100"
+                                  dir="ltr"
+                                />
+                              </div>
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="book-submit book-stagger-5"
+                    disabled={!form.formState.isValid || isBooking || !flight.rawOffer}
                   >
-                    <option value="mr">السيد (Mr)</option>
-                    <option value="ms">الآنسة (Ms)</option>
-                    <option value="mrs">السيدة (Mrs)</option>
-                  </select>
-                </div>
-
-                <div className="book-field">
-                  <label>البريد الإلكتروني</label>
-                  <input
-                    type="email"
-                    placeholder="example@email.com"
-                    value={form.email}
-                    onChange={e => updateField('email', e.target.value)}
-                    required
-                    dir="ltr"
-                  />
-                </div>
-
-                <div className="book-field">
-                  <label>رقم الهاتف</label>
-                  <input
-                    type="tel"
-                    placeholder="+963 xxx xxx xxx"
-                    value={form.phone_number}
-                    onChange={e => updateField('phone_number', e.target.value)}
-                    required
-                    dir="ltr"
-                  />
-                </div>
-
-                {/* Passport Info Card (nested) */}
-                <div className="book-passport-card book-stagger-3">
-                  <div className="book-section-header">
-                    <FileText className="h-4.5 w-4.5" />
-                    <span>بيانات جواز السفر</span>
-                  </div>
-
-                  <div className="book-row">
-                    <div className="book-field">
-                      <label>رقم جواز السفر</label>
-                      <input
-                        type="text"
-                        placeholder="مثال: N12345678"
-                        value={form.passport_number}
-                        onChange={e => updateField('passport_number', e.target.value)}
-                        required
-                        dir="ltr"
-                      />
-                    </div>
-                    <div className="book-field">
-                      <label>تاريخ انتهاء الجواز</label>
-                      <input
-                        type="date"
-                        value={form.passport_expiry}
-                        onChange={e => updateField('passport_expiry', e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="book-row">
-                    <div className="book-field">
-                      <label>الجنسية (رمز البلد)</label>
-                      <select
-                        value={form.nationality}
-                        onChange={e => updateField('nationality', e.target.value)}
-                      >
-                        <option value="SY">سوريا (SY)</option>
-                        <option value="AE">الإمارات (AE)</option>
-                        <option value="SA">السعودية (SA)</option>
-                        <option value="IQ">العراق (IQ)</option>
-                        <option value="JO">الأردن (JO)</option>
-                        <option value="LB">لبنان (LB)</option>
-                        <option value="EG">مصر (EG)</option>
-                        <option value="TR">تركيا (TR)</option>
-                        <option value="DE">ألمانيا (DE)</option>
-                        <option value="US">الولايات المتحدة (US)</option>
-                        <option value="GB">بريطانيا (GB)</option>
-                        <option value="FR">فرنسا (FR)</option>
-                        <option value="SE">السويد (SE)</option>
-                        <option value="NL">هولندا (NL)</option>
-                      </select>
-                    </div>
-                    <div className="book-field">
-                      <label>بلد الإصدار (رمز البلد)</label>
-                      <select
-                        value={form.issuance_country}
-                        onChange={e => updateField('issuance_country', e.target.value)}
-                      >
-                        <option value="SY">سوريا (SY)</option>
-                        <option value="AE">الإمارات (AE)</option>
-                        <option value="SA">السعودية (SA)</option>
-                        <option value="IQ">العراق (IQ)</option>
-                        <option value="JO">الأردن (JO)</option>
-                        <option value="LB">لبنان (LB)</option>
-                        <option value="EG">مصر (EG)</option>
-                        <option value="TR">تركيا (TR)</option>
-                        <option value="DE">ألمانيا (DE)</option>
-                        <option value="US">الولايات المتحدة (US)</option>
-                        <option value="GB">بريطانيا (GB)</option>
-                        <option value="FR">فرنسا (FR)</option>
-                        <option value="SE">السويد (SE)</option>
-                        <option value="NL">هولندا (NL)</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Address Card (nested) */}
-                <div className="book-address-card book-stagger-4">
-                  <div className="book-section-header">
-                    <MapPin className="h-4.5 w-4.5" />
-                    <span>عنوان السكن</span>
-                  </div>
-
-                  <div className="book-field">
-                    <label>العنوان</label>
-                    <input
-                      type="text"
-                      placeholder="مثال: شارع بغداد، بناء 12"
-                      value={form.address_line}
-                      onChange={e => updateField('address_line', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="book-row">
-                    <div className="book-field">
-                      <label>المدينة</label>
-                      <input
-                        type="text"
-                        placeholder="مثال: دمشق"
-                        value={form.city}
-                        onChange={e => updateField('city', e.target.value)}
-                      />
-                    </div>
-                    <div className="book-field">
-                      <label>الرمز البريدي</label>
-                      <input
-                        type="text"
-                        placeholder="مثال: 10100"
-                        value={form.postal_code}
-                        onChange={e => updateField('postal_code', e.target.value)}
-                        dir="ltr"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="book-submit book-stagger-5"
-                  disabled={!isFormValid || isBooking || !flight.rawOffer}
-                >
-                  {isBooking ? (
-                    <LoadingSpinner text="جاري إنشاء الحجز..." size="sm" />
-                  ) : (
-                    "تأكيد الحجز"
-                  )}
-                </button>
-              </form>
+                    {isBooking ? (
+                      <LoadingSpinner text="جاري إنشاء الحجز..." size="sm" />
+                    ) : (
+                      "تأكيد الحجز"
+                    )}
+                  </button>
+                </form>
+              </Form>
             </div>
           </>
         )}
