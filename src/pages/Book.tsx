@@ -30,6 +30,10 @@ export default function BookPage() {
     phone_number: '',
     gender: 'm',
     title: 'mr',
+    passport_number: '',
+    passport_expiry: '',
+    nationality: 'SY',
+    issuance_country: 'SY',
   });
 
   useEffect(() => {
@@ -46,7 +50,11 @@ export default function BookPage() {
     form.family_name.trim() &&
     form.born_on &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) &&
-    /^\+?[\d\s\-()]{7,}$/.test(form.phone_number.trim());
+    /^\+?[\d\s\-()]{7,}$/.test(form.phone_number.trim()) &&
+    form.passport_number.trim() &&
+    form.passport_expiry &&
+    /^[A-Z]{2}$/.test(form.nationality) &&
+    /^[A-Z]{2}$/.test(form.issuance_country);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -260,6 +268,78 @@ export default function BookPage() {
                   required
                   dir="ltr"
                 />
+              </div>
+
+              <div className="book-section-title" style={{ marginTop: 8 }}>بيانات جواز السفر</div>
+
+              <div className="book-row">
+                <div className="book-field">
+                  <label>رقم جواز السفر</label>
+                  <input
+                    type="text"
+                    placeholder="مثال: N12345678"
+                    value={form.passport_number}
+                    onChange={e => updateField('passport_number', e.target.value)}
+                    required
+                    dir="ltr"
+                  />
+                </div>
+                <div className="book-field">
+                  <label>تاريخ انتهاء الجواز</label>
+                  <input
+                    type="date"
+                    value={form.passport_expiry}
+                    onChange={e => updateField('passport_expiry', e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="book-row">
+                <div className="book-field">
+                  <label>الجنسية (رمز البلد)</label>
+                  <select
+                    value={form.nationality}
+                    onChange={e => updateField('nationality', e.target.value)}
+                  >
+                    <option value="SY">سوريا (SY)</option>
+                    <option value="AE">الإمارات (AE)</option>
+                    <option value="SA">السعودية (SA)</option>
+                    <option value="IQ">العراق (IQ)</option>
+                    <option value="JO">الأردن (JO)</option>
+                    <option value="LB">لبنان (LB)</option>
+                    <option value="EG">مصر (EG)</option>
+                    <option value="TR">تركيا (TR)</option>
+                    <option value="DE">ألمانيا (DE)</option>
+                    <option value="US">الولايات المتحدة (US)</option>
+                    <option value="GB">بريطانيا (GB)</option>
+                    <option value="FR">فرنسا (FR)</option>
+                    <option value="SE">السويد (SE)</option>
+                    <option value="NL">هولندا (NL)</option>
+                  </select>
+                </div>
+                <div className="book-field">
+                  <label>بلد الإصدار (رمز البلد)</label>
+                  <select
+                    value={form.issuance_country}
+                    onChange={e => updateField('issuance_country', e.target.value)}
+                  >
+                    <option value="SY">سوريا (SY)</option>
+                    <option value="AE">الإمارات (AE)</option>
+                    <option value="SA">السعودية (SA)</option>
+                    <option value="IQ">العراق (IQ)</option>
+                    <option value="JO">الأردن (JO)</option>
+                    <option value="LB">لبنان (LB)</option>
+                    <option value="EG">مصر (EG)</option>
+                    <option value="TR">تركيا (TR)</option>
+                    <option value="DE">ألمانيا (DE)</option>
+                    <option value="US">الولايات المتحدة (US)</option>
+                    <option value="GB">بريطانيا (GB)</option>
+                    <option value="FR">فرنسا (FR)</option>
+                    <option value="SE">السويد (SE)</option>
+                    <option value="NL">هولندا (NL)</option>
+                  </select>
+                </div>
               </div>
 
               <button

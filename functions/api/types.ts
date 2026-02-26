@@ -6,4 +6,8 @@ export interface BookingPassenger {
   phone_number: string;
   gender: 'm' | 'f';
   title: 'mr' | 'ms' | 'mrs';
+  passport_number: string;
+  passport_expiry: string; // YYYY-MM-DD
+  nationality: string; // ISO 3166-1 alpha-2 (e.g. "SY")
+  issuance_country: string; // ISO 3166-1 alpha-2 (e.g. "SY")
 }

@@ -12,6 +12,10 @@ function validatePassenger(p: BookingPassenger, index: number): string | null {
   if (!p.phone_number?.trim() || !/^\+?[\d\s\-()]{7,}$/.test(p.phone_number.trim())) return `المسافر ${n}: رقم الهاتف غير صالح`;
   if (!['m', 'f'].includes(p.gender)) return `المسافر ${n}: الجنس غير صالح`;
   if (!['mr', 'ms', 'mrs'].includes(p.title)) return `المسافر ${n}: اللقب غير صالح`;
+  if (!p.passport_number?.trim()) return `المسافر ${n}: رقم جواز السفر مطلوب`;
+  if (!p.passport_expiry || !/^\d{4}-\d{2}-\d{2}$/.test(p.passport_expiry)) return `المسافر ${n}: تاريخ انتهاء الجواز غير صالح`;
+  if (!p.nationality?.trim() || !/^[A-Z]{2}$/.test(p.nationality.trim())) return `المسافر ${n}: الجنسية غير صالحة`;
+  if (!p.issuance_country?.trim() || !/^[A-Z]{2}$/.test(p.issuance_country.trim())) return `المسافر ${n}: بلد الإصدار غير صالح`;
   return null;
 }
 
@@ -80,7 +84,45 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
           },
         ],
       },
+      documents: [
+        {
+          documentType: 'PASSPORT',
+          number: p.passport_number.trim().toUpperCase(),
+          expiryDate: p.passport_expiry,
+          issuanceCountry: p.issuance_country.trim().toUpperCase(),
+          nationality: p.nationality.trim().toUpperCase(),
+          holder: true,
+        },
+      ],
     }));
+
+    // Top-level contacts (required by Amadeus)
+    const firstPassenger = passengers[0];
+    const contacts = [
+      {
+        addresseeName: {
+          firstName: firstPassenger.given_name.trim().toUpperCase(),
+          lastName: firstPassenger.family_name.trim().toUpperCase(),
+        },
+        purpose: 'STANDARD',
+        phones: [
+          {
+            deviceType: 'MOBILE',
+            countryCallingCode: extractCountryCode(firstPassenger.phone_number),
+            number: extractPhoneNumber(firstPassenger.phone_number),
+          },
+        ],
+        emailAddress: firstPassenger.email.trim(),
+      },
+    ];
+
+    // Ticketing agreement — delay cancellation by 1 day (required for self-service)
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const ticketingAgreement = {
+      option: 'DELAY_TO_CANCEL',
+      dateTime: tomorrow.toISOString().split('T')[0],
+    };
 
     const orderRes = await amadeusFetch(env, token, '/v1/booking/flight-orders', {
       method: 'POST',
@@ -89,6 +131,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
           type: 'flight-order',
           flightOffers: [pricedOffer],
           travelers,
+          contacts,
+          ticketingAgreement,
         },
       },
     });
