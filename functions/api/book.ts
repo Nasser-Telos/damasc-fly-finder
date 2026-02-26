@@ -126,12 +126,10 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       },
     ];
 
-    // Ticketing agreement — delay cancellation by 1 day (required for self-service)
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // Ticketing agreement — delay cancellation by 6 days (per Amadeus spec example)
     const ticketingAgreement = {
       option: 'DELAY_TO_CANCEL',
-      dateTime: tomorrow.toISOString().slice(0, 19),
+      delay: '6D',
     };
 
     const orderRes = await amadeusFetch(env, token, '/v1/booking/flight-orders', {
